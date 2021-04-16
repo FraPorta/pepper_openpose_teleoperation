@@ -37,7 +37,8 @@ try:
     params = dict()
     params["model_folder"] = "models/"
     params["net_resolution"] = "-1x256"
-    #params["camera"] = "2"
+    # kinect v2 as camera
+    params["camera"] = "1"
     
     # Add others in path?
     for i in range(0, len(args[1])):

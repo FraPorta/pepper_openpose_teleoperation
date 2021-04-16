@@ -7,6 +7,15 @@ from sys import platform
 import argparse
 from pathlib import Path
 
+# kinect libraries
+from pykinect2.PyKinectV2 import *
+from pykinect2 import PyKinectV2
+from pykinect2 import PyKinectRuntime
+# local imports
+from pykinect_lib.map_functions import *
+import pykinect_lib.utils_PyKinectV2 as utils
+
+
 
 def display(datums):
     datum = datums[0]
@@ -14,20 +23,33 @@ def display(datums):
     key = cv2.waitKey(1)
     return (key == 27)
 
+def displayInput(datums):
+    datum = datums[0]
+    cv2.imshow("Kinect Input Color Image", datum.cvInputData)
+    key = cv2.waitKey(1)
+    return (key == 27)
 
-def printKeypoints(datums):
-    poseModel = op.PoseModel.BODY_25
-    print(op.getPoseBodyPartMapping(poseModel))
-    print(op.getPoseNumberBodyParts(poseModel))
-    print(op.getPosePartPairs(poseModel))
-    print(op.getPoseMapIndex(poseModel))
+
+def getKeypoints(datums):
+    # poseModel = op.PoseModel.BODY_25
+    # print(op.getPoseBodyPartMapping(poseModel))
+    # print(op.getPoseNumberBodyParts(poseModel))
+    # print(op.getPosePartPairs(poseModel))
+    # print(op.getPoseMapIndex(poseModel))
     
     datum = datums[0]
-    print("Body keypoints: \n" + str(datum.poseKeypoints))
-    print("Face keypoints: \n" + str(datum.faceKeypoints))
-    print("Left hand keypoints: \n" + str(datum.handKeypoints[0]))
-    print("Right hand keypoints: \n" + str(datum.handKeypoints[1]))
+    # print("Body keypoints: \n" + str(datum.poseKeypoints))
+    body_keypoints = datum.poseKeypoints
+    # first point
+    x = body_keypoints[0,0,0]
+    y = body_keypoints[0,0,1]
+    color = [int(x),int(y)]
+    return color
+    # print("Face keypoints: \n" + str(datum.faceKeypoints))
+    # print("Left hand keypoints: \n" + str(datum.handKeypoints[0]))
+    # print("Right hand keypoints: \n" + str(datum.handKeypoints[1]))
 
+#def get_depth_point()
 
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
@@ -56,8 +78,12 @@ try:
 
     # Custom Params (refer to include/openpose/flags.hpp for more parameters)
     params = dict()
-    params["model_folder"] = "models/"
-    params["net_resolution"] = "-1x256"
+    params["model_folder"] = "models/"          # specify folder where models are located
+    params["net_resolution"] = "-1x256"         # select net resolution (necessary for low end graphic cards)
+    params["camera"] = "1"                      # set '0' for webcam or '1' for kinect
+    params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
+    params["number_people_max"] = "1"           # limit the number of recognized people to 1
+     
 
     # Add others in path?
     for i in range(0, len(args[1])):
@@ -79,17 +105,37 @@ try:
     opWrapper = op.WrapperPython(op.ThreadManagerMode.AsynchronousOut)
     opWrapper.configure(params)
     opWrapper.start()
+    
+    kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color |
+                                             PyKinectV2.FrameSourceTypes_Depth )
+
+    depth_width, depth_height = kinect.depth_frame_desc.Width, kinect.depth_frame_desc.Height # Default: 512, 424
+    color_width, color_height = kinect.color_frame_desc.Width, kinect.color_frame_desc.Height # Default: 1920, 1080
+
 
     # Main loop
     userWantsToExit = False
     while not userWantsToExit:
+        
         # Pop frame
         datumProcessed = op.VectorDatum()
+        
+        
         if opWrapper.waitAndPop(datumProcessed):
             if not args[0].no_display:
-                # Display image
+                
+                # Display input image
+                #userWantsToExit = displayInput(datumProcessed)
+                # Display output image
                 userWantsToExit = display(datumProcessed)
-            printKeypoints(datumProcessed)
+                
+            if kinect.has_new_depth_frame():
+                color_point = getKeypoints(datumProcessed)
+                # extract depth point
+                depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
+                print(depth_point)
+                
+            # printKeypoints(datumProcessed)
         else:
             break
 except Exception as e:
