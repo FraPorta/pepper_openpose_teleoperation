@@ -6,6 +6,7 @@ import os
 from sys import platform
 import argparse
 from pathlib import Path
+import numpy as np
 
 # kinect libraries
 from pykinect2.PyKinectV2 import *
@@ -14,6 +15,35 @@ from pykinect2 import PyKinectRuntime
 # local imports
 from pykinect_lib.map_functions import *
 import pykinect_lib.utils_PyKinectV2 as utils
+
+# Result for BODY_25 (25 body parts consisting of COCO + foot)
+#     {0,  "Nose"},
+#     {1,  "Neck"},
+#     {2,  "RShoulder"},
+#     {3,  "RElbow"},
+#     {4,  "RWrist"},
+#     {5,  "LShoulder"},
+#     {6,  "LElbow"},
+#     {7,  "LWrist"},
+#     {8,  "MidHip"},
+#     {9,  "RHip"},
+#     {10, "RKnee"},
+#     {11, "RAnkle"},
+#     {12, "LHip"},
+#     {13, "LKnee"},
+#     {14, "LAnkle"},
+#     {15, "REye"},
+#     {16, "LEye"},
+#     {17, "REar"},
+#     {18, "LEar"},
+#     {19, "LBigToe"},
+#     {20, "LSmallToe"},
+#     {21, "LHeel"},
+#     {22, "RBigToe"},
+#     {23, "RSmallToe"},
+#     {24, "RHeel"},
+#     {25, "Background"}
+# };
 
 
 
@@ -30,26 +60,36 @@ def displayInput(datums):
     return (key == 27)
 
 
-def getKeypoints(datums):
-    # poseModel = op.PoseModel.BODY_25
-    # print(op.getPoseBodyPartMapping(poseModel))
-    # print(op.getPoseNumberBodyParts(poseModel))
-    # print(op.getPosePartPairs(poseModel))
-    # print(op.getPoseMapIndex(poseModel))
-    
+def getDepthKeypoints(datums):
     datum = datums[0]
     # print("Body keypoints: \n" + str(datum.poseKeypoints))
     body_keypoints = datum.poseKeypoints
     # first point
-    x = body_keypoints[0,0,0]
-    y = body_keypoints[0,0,1]
-    color = [int(x),int(y)]
-    return color
-    # print("Face keypoints: \n" + str(datum.faceKeypoints))
-    # print("Left hand keypoints: \n" + str(datum.handKeypoints[0]))
-    # print("Right hand keypoints: \n" + str(datum.handKeypoints[1]))
+    
+        
+    if kinect.has_new_depth_frame():
+        # get last depth frame
+        depth_frame = kinect.get_last_depth_frame()
+        
+        # Reshape from 1D frame to 2D image
+        depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
+            
+        for i in range(0,7): # extract only the interesting depth points (upper body limbs)
+            x = body_keypoints[0,i,0]
+            y = body_keypoints[0,i,1]
+            color_point = [int(x),int(y)]
+            
+            # if color_point is not zero (The keypoint was not detected)
+            if color_point[0] != 0 and color_point[1] != 0 : 
+            
+                # extract depth point and correspondent depth value
+                depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
+                print(depth_point)
+                depth_value = depth_img[depth_point]
+                print(depth_value) 
+            
+            
 
-#def get_depth_point()
 
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
@@ -106,12 +146,12 @@ try:
     opWrapper.configure(params)
     opWrapper.start()
     
+    # starting kinect to acquire depth data
     kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color |
                                              PyKinectV2.FrameSourceTypes_Depth )
 
     depth_width, depth_height = kinect.depth_frame_desc.Width, kinect.depth_frame_desc.Height # Default: 512, 424
     color_width, color_height = kinect.color_frame_desc.Width, kinect.color_frame_desc.Height # Default: 1920, 1080
-
 
     # Main loop
     userWantsToExit = False
@@ -129,11 +169,7 @@ try:
                 # Display output image
                 userWantsToExit = display(datumProcessed)
                 
-            if kinect.has_new_depth_frame():
-                color_point = getKeypoints(datumProcessed)
-                # extract depth point
-                depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
-                print(depth_point)
+            
                 
             # printKeypoints(datumProcessed)
         else:

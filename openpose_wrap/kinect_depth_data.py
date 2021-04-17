@@ -57,7 +57,7 @@ while True:
         depth_colormap   = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 1500 mm
         
         cv2.imshow('color', color_img_resize)                       # (540, 960, 4)
-        cv2.imshow('align color with depth image', align_color_img) # (424, 512)
+        #cv2.imshow('align color with depth image', align_color_img) # (424, 512)
         cv2.imshow('depth', depth_colormap)                         # (424, 512)
         cv2.imshow('depth original', depth_img)
 

@@ -1,4 +1,3 @@
-
 # From Python
 # It requires OpenCV installed for Python
 import sys
@@ -7,6 +6,22 @@ import os
 from sys import platform
 import argparse
 from pathlib import Path
+
+
+def display(datums):
+    datum = datums[0]
+    cv2.imshow("OpenPose 1.7.0 - Tutorial Python API", datum.cvOutputData)
+    key = cv2.waitKey(1)
+    return (key == 27)
+
+
+def printKeypoints(datums):
+    datum = datums[0]
+    print("Body keypoints: \n" + str(datum.poseKeypoints))
+    print("Face keypoints: \n" + str(datum.faceKeypoints))
+    print("Left hand keypoints: \n" + str(datum.handKeypoints[0]))
+    print("Right hand keypoints: \n" + str(datum.handKeypoints[1]))
+
 
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
@@ -30,16 +45,17 @@ try:
 
     # Flags
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image_path", default="../../../examples/media/COCO_val2014_000000000192.jpg", help="Process an image. Read all standard formats (jpg, png, bmp, etc.).")
+    parser.add_argument("--no-display", action="store_true", help="Disable display.")
     args = parser.parse_known_args()
 
     # Custom Params (refer to include/openpose/flags.hpp for more parameters)
     params = dict()
-    params["model_folder"] = "models/"
-    params["net_resolution"] = "-1x256"
-    # kinect v2 as camera
-    params["camera"] = "0"
-    
+    params["model_folder"] = "models/"          # specify folder where models are located
+    params["net_resolution"] = "-1x256"         # select net resolution (necessary for low end graphic cards)
+    # params["camera"] = "0"                      # set '0' for webcam or '1' for kinect
+    # params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
+    # params["number_people_max"] = "1"           # limit the number of recognized people to 1
+
     # Add others in path?
     for i in range(0, len(args[1])):
         curr_item = args[1][i]
@@ -55,22 +71,24 @@ try:
     # Construct it from system arguments
     # op.init_argv(args[1])
     # oppython = op.OpenposePython()
-    
-    poseModel = op.PoseModel.BODY_25
-    print(op.getPoseBodyPartMapping(poseModel))
-    body_mapping = op.getPoseBodyPartMapping(poseModel)
-    print(body_mapping[0]) # out: Nose
-    
-    #print(op.getPoseNumberBodyParts(poseModel))
-    #print(op.getPosePartPairs(poseModel))
-    #print(op.getPoseMapIndex(poseModel))
-    
+
     # Starting OpenPose
-    opWrapper = op.WrapperPython(op.ThreadManagerMode.Synchronous)
+    opWrapper = op.WrapperPython(op.ThreadManagerMode.AsynchronousOut)
     opWrapper.configure(params)
-    opWrapper.execute()
-    
-    
+    opWrapper.start()
+
+    # Main loop
+    userWantsToExit = False
+    while not userWantsToExit:
+        # Pop frame
+        datumProcessed = op.VectorDatum()
+        if opWrapper.waitAndPop(datumProcessed):
+            if not args[0].no_display:
+                # Display image
+                userWantsToExit = display(datumProcessed)
+            printKeypoints(datumProcessed)
+        else:
+            break
 except Exception as e:
     print(e)
     sys.exit(-1)
