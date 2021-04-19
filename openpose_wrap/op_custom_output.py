@@ -64,9 +64,10 @@ def getDepthKeypoints(datums):
     datum = datums[0]
     # print("Body keypoints: \n" + str(datum.poseKeypoints))
     body_keypoints = datum.poseKeypoints
-    # first point
     
-        
+    # create dictionary for keypoints in world coordinates
+    wp_dict = {}
+
     if kinect.has_new_depth_frame():
         # get last depth frame
         depth_frame = kinect.get_last_depth_frame()
@@ -74,7 +75,7 @@ def getDepthKeypoints(datums):
         # Reshape from 1D frame to 2D image
         depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
             
-        for i in range(0,7): # extract only the interesting depth points (upper body limbs)
+        for i in range(0,7): # extract only the needed depth points (upper body limbs)
             x = body_keypoints[0,i,0]
             y = body_keypoints[0,i,1]
             color_point = [int(x),int(y)]
@@ -82,11 +83,20 @@ def getDepthKeypoints(datums):
             # if color_point is not zero (The keypoint was not detected)
             if color_point[0] != 0 and color_point[1] != 0 : 
             
-                # extract depth point and correspondent depth value
+                # map color point to correspondent depth point  
                 depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
                 print(depth_point)
-                depth_value = depth_img[depth_point]
-                print(depth_value) 
+                
+                #depth_value = depth_img[depth_point]
+                # print(depth_value) 
+                
+                # map depth point to world point (x, y, z in meters in camera frame)
+                world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point)
+                
+                # add item to the dictionary
+                wp_dict[i] = world_point
+        
+        print(wp_dict)
             
             
 
@@ -160,7 +170,6 @@ try:
         # Pop frame
         datumProcessed = op.VectorDatum()
         
-        
         if opWrapper.waitAndPop(datumProcessed):
             if not args[0].no_display:
                 
@@ -169,9 +178,6 @@ try:
                 # Display output image
                 userWantsToExit = display(datumProcessed)
                 
-            
-                
-            # printKeypoints(datumProcessed)
         else:
             break
 except Exception as e:

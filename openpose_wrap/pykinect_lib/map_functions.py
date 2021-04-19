@@ -186,7 +186,7 @@ def xy2uv_with_res(x, y, color_width, color_height, depth_width, depth_height):
 def depth_2_world(kinect, depth_frame_data, camera_space_point, as_array=False):
     """
     :param kinect: kinect class
-     :param depth_frame_data: kinect._depth_frame_data
+    :param depth_frame_data: kinect._depth_frame_data
     :param camera_space_point: _CameraSpacePoint
     :param as_array: returns the data as a numpy array
     :return: returns the DepthFrame mapped to camera space
