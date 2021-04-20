@@ -94,6 +94,7 @@ def color_point_2_depth_point(kinect, depth_space_point, depth_frame_data, color
     # Import here to optimize
     import numpy as np
     import ctypes
+    import math
     # Map Color to Depth Space
     # Make sure that the kinect was able to obtain at least one color and depth frame, else the depth_x and depth_y values will go to infinity
     color2depth_points_type = depth_space_point * np.int(1920 * 1080)
@@ -104,9 +105,11 @@ def color_point_2_depth_point(kinect, depth_space_point, depth_frame_data, color
     depth_y = color2depth_points[color_point[1] * 1920 + color_point[0] - 1].y
     #print(depth_x)
     #print(depth_y)
-    #return [int(depth_x), int(depth_y)]
-    return [depth_x, depth_y]
-
+    if math.isinf(depth_x) or math.isinf(depth_y):
+        return [depth_x, depth_y]
+    else:
+        return [int(depth_x), int(depth_y)]
+    
 
 # Return depth of object given the depth map coordinates
 def depth_space_2_world_depth(depth_map, x, y):
@@ -359,7 +362,7 @@ def depth_points_2_camera_points(kinect, depth_space_point, camera_space_point, 
 
 
 # Map a depth point to world point
-def depth_point_2_world_point(kinect, depth_space_point, depthPoint):
+def depth_point_2_world_point(kinect, depth_space_point, depthPoint, depth):
     """
 
     :param kinect: kinect class
@@ -370,11 +373,16 @@ def depth_point_2_world_point(kinect, depth_space_point, depthPoint):
     # Import here for optimization
     import numpy as np
     import ctypes
+    
+    #depth = 100
+    
     depth_point_data_type = depth_space_point * np.int(1)
     depth_point = ctypes.cast(depth_point_data_type(), ctypes.POINTER(depth_space_point))
     depth_point.contents.x = depthPoint[0]
     depth_point.contents.y = depthPoint[1]
-    world_point = kinect._mapper.MapDepthPointToCameraSpace(depth_point.contents, ctypes.c_ushort(512*424))
+    # world_point = kinect._mapper.MapDepthPointToCameraSpace(depth_point.contents, ctypes.c_ushort(512*424))
+    world_point = kinect._mapper.MapDepthPointToCameraSpace(depth_point.contents, depth)
+
     return [world_point.x, world_point.y, world_point.z]  # meters
 
 

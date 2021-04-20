@@ -7,6 +7,7 @@ from sys import platform
 import argparse
 from pathlib import Path
 import numpy as np
+import math
 
 # kinect libraries
 from pykinect2.PyKinectV2 import *
@@ -62,19 +63,21 @@ def displayInput(datums):
 
 def getDepthKeypoints(datums):
     datum = datums[0]
-    # print("Body keypoints: \n" + str(datum.poseKeypoints))
+    # get Body keypoints
     body_keypoints = datum.poseKeypoints
     
-    # create dictionary for keypoints in world coordinates
+    # create dictionary for keypoints in depth/world coordinates
     wp_dict = {}
-
+    dp_dict = {}
+    dv_dict = {}
+    
     if kinect.has_new_depth_frame():
         # get last depth frame
         depth_frame = kinect.get_last_depth_frame()
         
         # Reshape from 1D frame to 2D image
         depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
-            
+        
         for i in range(0,7): # extract only the needed depth points (upper body limbs)
             x = body_keypoints[0,i,0]
             y = body_keypoints[0,i,1]
@@ -85,18 +88,35 @@ def getDepthKeypoints(datums):
             
                 # map color point to correspondent depth point  
                 depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
-                print(depth_point)
+                #print(depth_point)
                 
-                #depth_value = depth_img[depth_point]
-                # print(depth_value) 
+                if depth_point[0] < depth_height and depth_point[1] < depth_width:
+                    if (not math.isinf(depth_point[0])) and (not math.isinf(depth_point[1])):
+                        depth_value = depth_img[depth_point[0], depth_point[1]]
+                        #print(depth_value) 
+                        
+                        dp_dict[i] = depth_point
+                        dv_dict[i] = depth_value
+                        
+                        # map depth point to world point (x, y, z in meters in camera frame)
+                        world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value)
+                        #world_point = [world_point[0], world_point[1], depth_value * (1/1000)]
+                        # print(world_point) 
+                    
+                        # add item to the dictionary
+                        wp_dict[i] = world_point
                 
-                # map depth point to world point (x, y, z in meters in camera frame)
-                world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point)
-                
-                # add item to the dictionary
-                wp_dict[i] = world_point
-        
+        # show keypoints on depth image
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/1500), cv2.COLORMAP_JET) # Scale to display from 0 mm to 1500 mm
+        for i in dp_dict.keys():
+            cv2.drawMarker(depth_colormap, (dp_dict[i][0], dp_dict[i][1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=3, line_type=cv2.LINE_AA)
+        #depth_colormap_keypoint = cv2.circle(depth_colormap, (depth_point[0], depth_point[1]), radius=10, color=(10, 0, 0) , thickness=10)
+        cv2.imshow('color depth image with keypoints', depth_colormap)
+        print(dp_dict)
+        print(dv_dict)
         print(wp_dict)
+        key = cv2.waitKey(1)
+        return (key == 27)
             
             
 
@@ -128,9 +148,10 @@ try:
 
     # Custom Params (refer to include/openpose/flags.hpp for more parameters)
     params = dict()
-    params["model_folder"] = "models/"          # specify folder where models are located
+    #params["model_folder"] = "models/"          # specify folder where models are located
+    params["model_folder"] = "C:/Users/franc/Downloads/pepper_openpose_teloperation/openpose_wrap/models/" 
     params["net_resolution"] = "-1x256"         # select net resolution (necessary for low end graphic cards)
-    params["camera"] = "1"                      # set '0' for webcam or '1' for kinect
+    params["camera"] = "0"                      # 
     params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
     params["number_people_max"] = "1"           # limit the number of recognized people to 1
      
@@ -150,15 +171,14 @@ try:
     # Construct it from system arguments
     # op.init_argv(args[1])
     # oppython = op.OpenposePython()
+    
+    # starting kinect to acquire depth data
+    kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color | PyKinectV2.FrameSourceTypes_Depth)
 
     # Starting OpenPose
     opWrapper = op.WrapperPython(op.ThreadManagerMode.AsynchronousOut)
     opWrapper.configure(params)
     opWrapper.start()
-    
-    # starting kinect to acquire depth data
-    kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color |
-                                             PyKinectV2.FrameSourceTypes_Depth )
 
     depth_width, depth_height = kinect.depth_frame_desc.Width, kinect.depth_frame_desc.Height # Default: 512, 424
     color_width, color_height = kinect.color_frame_desc.Width, kinect.color_frame_desc.Height # Default: 1920, 1080
@@ -171,15 +191,26 @@ try:
         datumProcessed = op.VectorDatum()
         
         if opWrapper.waitAndPop(datumProcessed):
+            
+            # map color space keypoints to depth space 
+            # getDepthKeypoints(datumProcessed)
+            
             if not args[0].no_display:
                 
                 # Display input image
-                #userWantsToExit = displayInput(datumProcessed)
+                # userWantsToExit = displayInput(datumProcessed)
+                
                 # Display output image
                 userWantsToExit = display(datumProcessed)
+                # Map color space keypoints to depth space 
+                userWantsToExit = getDepthKeypoints(datumProcessed)
                 
+                    
         else:
             break
+        
 except Exception as e:
     print(e)
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    print(exc_type, exc_tb.tb_lineno)
     sys.exit(-1)
