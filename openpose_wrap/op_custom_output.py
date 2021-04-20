@@ -8,6 +8,7 @@ import argparse
 from pathlib import Path
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 # kinect libraries
 from pykinect2.PyKinectV2 import *
@@ -46,20 +47,23 @@ import pykinect_lib.utils_PyKinectV2 as utils
 #     {25, "Background"}
 # };
 
-
-
 def display(datums):
     datum = datums[0]
-    cv2.imshow("OpenPose 1.7.0 - Tutorial Python API", datum.cvOutputData)
+    color_img = datum.cvOutputData
+    color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
+    cv2.imshow("OpenPose 1.7.0", color_img_resize)
+    
     key = cv2.waitKey(1)
     return (key == 27)
 
+'''
 def displayInput(datums):
     datum = datums[0]
     cv2.imshow("Kinect Input Color Image", datum.cvInputData)
+    
     key = cv2.waitKey(1)
     return (key == 27)
-
+'''
 
 def getDepthKeypoints(datums):
     datum = datums[0]
@@ -78,7 +82,7 @@ def getDepthKeypoints(datums):
         # Reshape from 1D frame to 2D image
         depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
         
-        for i in range(0,7): # extract only the needed depth points (upper body limbs)
+        for i in range(1,8): # extract only the needed depth points (upper body limbs)
             x = body_keypoints[0,i,0]
             y = body_keypoints[0,i,1]
             color_point = [int(x),int(y)]
@@ -88,38 +92,50 @@ def getDepthKeypoints(datums):
             
                 # map color point to correspondent depth point  
                 depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
-                #print(depth_point)
                 
                 if depth_point[0] < depth_height and depth_point[1] < depth_width:
                     if (not math.isinf(depth_point[0])) and (not math.isinf(depth_point[1])):
-                        depth_value = depth_img[depth_point[0], depth_point[1]]
-                        #print(depth_value) 
+                        depth_value = depth_img[depth_point[1], depth_point[0]]
                         
+                        # Add depth points and value to respective dictionaries
                         dp_dict[i] = depth_point
                         dv_dict[i] = depth_value
                         
-                        # map depth point to world point (x, y, z in meters in camera frame)
-                        world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value)
-                        #world_point = [world_point[0], world_point[1], depth_value * (1/1000)]
-                        # print(world_point) 
-                    
-                        # add item to the dictionary
-                        wp_dict[i] = world_point
+                        # Map depth point to world point (x, y, z in meters in camera frame)
+                        world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
+                        
+                        if depth_value != 0:
+                            # Add world point to the dictionary
+                            wp_dict[i] = world_point
                 
         # show keypoints on depth image
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/1500), cv2.COLORMAP_JET) # Scale to display from 0 mm to 1500 mm
+        # draw markers for keypoints on depth image
         for i in dp_dict.keys():
-            cv2.drawMarker(depth_colormap, (dp_dict[i][0], dp_dict[i][1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=3, line_type=cv2.LINE_AA)
-        #depth_colormap_keypoint = cv2.circle(depth_colormap, (depth_point[0], depth_point[1]), radius=10, color=(10, 0, 0) , thickness=10)
-        cv2.imshow('color depth image with keypoints', depth_colormap)
-        print(dp_dict)
-        print(dv_dict)
+            cv2.drawMarker(depth_colormap, (dp_dict[i][0], dp_dict[i][1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
+        # show image
+        cv2.imshow('Depth image with keypoints', depth_colormap)
+        
+        # print(dp_dict)
+        # print(dv_dict)
         print(wp_dict)
+        
+        '''
+        data_list = list(wp_dict.values())
+        data = np.array(data_list)
+        for i in wp_dict.keys():
+            xdata = data[:,0]
+            ydata = data[:,1]
+            zdata = data[:,2]
+        
+        ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens');
+        plt.show()
+        '''
+        
         key = cv2.waitKey(1)
         return (key == 27)
             
             
-
 
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
@@ -179,7 +195,8 @@ try:
     opWrapper = op.WrapperPython(op.ThreadManagerMode.AsynchronousOut)
     opWrapper.configure(params)
     opWrapper.start()
-
+    #opWrapper.execute()
+    
     depth_width, depth_height = kinect.depth_frame_desc.Width, kinect.depth_frame_desc.Height # Default: 512, 424
     color_width, color_height = kinect.color_frame_desc.Width, kinect.color_frame_desc.Height # Default: 1920, 1080
 
@@ -196,11 +213,7 @@ try:
             # getDepthKeypoints(datumProcessed)
             
             if not args[0].no_display:
-                
-                # Display input image
-                # userWantsToExit = displayInput(datumProcessed)
-                
-                # Display output image
+                # Display OpenPose output image
                 userWantsToExit = display(datumProcessed)
                 # Map color space keypoints to depth space 
                 userWantsToExit = getDepthKeypoints(datumProcessed)
