@@ -8,7 +8,6 @@ import argparse
 from pathlib import Path
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 
 # kinect libraries
 from pykinect2.PyKinectV2 import *
@@ -67,6 +66,7 @@ def displayInput(datums):
 
 def getDepthKeypoints(datums):
     datum = datums[0]
+    color_img = datum.cvOutputData
     # get Body keypoints
     body_keypoints = datum.poseKeypoints
     
@@ -144,8 +144,10 @@ try:
         # Windows Import
         if platform == "win32":
             # Change these variables to point to the correct folder (Release/x64 etc.)
-            sys.path.append(home + '/Downloads/openpose/build/python/openpose/Release');
-            os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/Downloads/openpose/build/x64/Release;' +  home + '/Downloads/openpose/build/bin;'
+            sys.path.append(home + '/openpose/build/python/openpose/Release');
+            # sys.path.append(home + '/Downloads/openpose/build/python/openpose/Release'); # MSI
+            os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/openpose/build/x64/Release;' +  home + '/openpose/build/bin;'
+            # os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/Downloads/openpose/build/x64/Release;' +  home + '/Downloads/openpose/build/bin;' # MSI
             import pyopenpose as op
         else:
             # Change these variables to point to the correct folder (Release/x64 etc.)
@@ -164,10 +166,11 @@ try:
 
     # Custom Params (refer to include/openpose/flags.hpp for more parameters)
     params = dict()
-    #params["model_folder"] = "models/"          # specify folder where models are located
-    params["model_folder"] = "C:/Users/franc/Downloads/pepper_openpose_teloperation/openpose_wrap/models/" 
-    params["net_resolution"] = "-1x256"         # select net resolution (necessary for low end graphic cards)
-    params["camera"] = "0"                      # 
+    # Change path to point to the models folder 
+    #params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
+    params["model_folder"] = home + '/openpose/models/'
+    # params["net_resolution"] = "-1x256"         # select net resolution (necessary for low end graphic cards)
+    params["camera"] = "-1"                     # automatically select camera input (-1)
     params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
     params["number_people_max"] = "1"           # limit the number of recognized people to 1
      
@@ -214,7 +217,7 @@ try:
             
             if not args[0].no_display:
                 # Display OpenPose output image
-                userWantsToExit = display(datumProcessed)
+                # userWantsToExit = display(datumProcessed)
                 # Map color space keypoints to depth space 
                 userWantsToExit = getDepthKeypoints(datumProcessed)
                 

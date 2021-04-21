@@ -11,12 +11,13 @@ from pathlib import Path
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
     home = str(Path.home())
+    print(home)
     try:
         # Windows Import
         if platform == "win32":
             # Change these variables to point to the correct folder (Release/x64 etc.)
-            sys.path.append(home + '/Downloads/openpose/build/python/openpose/Release');
-            os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/Downloads/openpose/build/x64/Release;' +  home + '/Downloads/openpose/build/bin;'
+            sys.path.append(home + '/openpose/build/python/openpose/Release');
+            os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/openpose/build/x64/Release;' +  home + '/openpose/build/bin;'
             import pyopenpose as op
         else:
             # Change these variables to point to the correct folder (Release/x64 etc.)
@@ -35,10 +36,12 @@ try:
 
     # Custom Params (refer to include/openpose/flags.hpp for more parameters)
     params = dict()
-    params["model_folder"] = "models/"
-    params["net_resolution"] = "-1x256"
+    params["model_folder"] = home + '/openpose/models/'
+    # params["net_resolution"] = "-1x256"
     # kinect v2 as camera
-    params["camera"] = "0"
+    params["camera"] = "-1"
+    params["camera_resolution"] = "1920x1080"
+
     
     # Add others in path?
     for i in range(0, len(args[1])):
@@ -55,12 +58,12 @@ try:
     # Construct it from system arguments
     # op.init_argv(args[1])
     # oppython = op.OpenposePython()
-    
+    '''
     poseModel = op.PoseModel.BODY_25
     print(op.getPoseBodyPartMapping(poseModel))
     body_mapping = op.getPoseBodyPartMapping(poseModel)
     print(body_mapping[0]) # out: Nose
-    
+    '''
     #print(op.getPoseNumberBodyParts(poseModel))
     #print(op.getPosePartPairs(poseModel))
     #print(op.getPoseMapIndex(poseModel))

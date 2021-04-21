@@ -39,7 +39,7 @@ while True:
         depth_img        = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
         
         # extract depth point
-        depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
+        #depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
         #for j in range(0,1080):
         #    color_point = [500,j]
 
