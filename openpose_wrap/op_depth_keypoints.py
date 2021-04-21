@@ -55,18 +55,17 @@ def display(datums):
     key = cv2.waitKey(1)
     return (key == 27)
 
-'''
+
 def displayInput(datums):
     datum = datums[0]
     cv2.imshow("Kinect Input Color Image", datum.cvInputData)
     
     key = cv2.waitKey(1)
     return (key == 27)
-'''
+
 
 def getDepthKeypoints(datums):
     datum = datums[0]
-    color_img = datum.cvOutputData
     # get Body keypoints
     body_keypoints = datum.poseKeypoints
     
@@ -209,17 +208,19 @@ try:
         
         # Pop frame
         datumProcessed = op.VectorDatum()
-        
+
         if opWrapper.waitAndPop(datumProcessed):
             
-            # map color space keypoints to depth space 
-            # getDepthKeypoints(datumProcessed)
-            
-            if not args[0].no_display:
+            # Map color space keypoints to depth space 
+            userWantsToExit = getDepthKeypoints(datumProcessed)
+            # Display OpenPose output image
+            userWantsToExit = display(datumProcessed)
+
+            #if not args[0].no_display:
                 # Display OpenPose output image
                 # userWantsToExit = display(datumProcessed)
                 # Map color space keypoints to depth space 
-                userWantsToExit = getDepthKeypoints(datumProcessed)
+                # userWantsToExit = getDepthKeypoints(datumProcessed)
                 
                     
         else:
