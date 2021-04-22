@@ -8,6 +8,7 @@ import argparse
 from pathlib import Path
 import numpy as np
 import math
+import json
 
 # kinect libraries
 from pykinect2.PyKinectV2 import *
@@ -115,19 +116,15 @@ def getDepthKeypoints(datums):
                                 world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
                                 wp_dict[i] = world_point
 
-            '''
-            print("Depth points:")
-            print(dp_dict)
-            print(dv_dict)
-            print("World points:")
-            
-            '''
             # print(dv_dict)
             # print(wp_dict)
+            
+            # Save keypoints on a Json file
+            save3DKeypoints(wp_dict)
 
             # Print keypoints with depth errors (0          -> keypoint not detcted anymore
-            #                                    high value -> background point detcted instead of keypoint )
-            # These keypoints are discarded
+            #                                    high value -> background point detcted instead of keypoint)
+            # These keypoints were discarded
             if dv_dict.keys() != wp_dict.keys():
                 print("Keypoints with depth error:")
                 set_dv = set(dv_dict.keys())
@@ -142,14 +139,14 @@ def getDepthKeypoints(datums):
             # Apply colormap to depth image
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 2000 mm
 
-            # draw keypoints markers on depth image if they were detected
+            # Draw keypoints markers on depth image if they were detected
             if len(dp_dict) != 0:
                 for i in dp_dict.keys():
                     cv2.drawMarker(depth_colormap, (dp_dict[i][0], dp_dict[i][1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
-            # show image
+            # Show image
             cv2.imshow('Depth image with keypoints', depth_colormap)
 
-            # show image for at least 1 ms and check if the user wants to exit
+            # Show image for at least 1 ms and check if the user wants to exit
             key = cv2.waitKey(1)
             return (key == 27)
             
@@ -160,7 +157,18 @@ def getDepthKeypoints(datums):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print(exc_type, exc_tb.tb_lineno)
         sys.exit(-1)
-        
+
+def save3DKeypoints(dictionary):
+    # write camera frame keypoints on a json file
+    try:
+        with open("json_files/3Dkeypoints.json", "w") as write_file:
+            json.dump(dictionary, write_file, indent=4)
+
+    except (OSError, IOError) as e:
+        print(e)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        print(exc_type, exc_tb.tb_lineno)
+        sys.exit(-1)
 
 try:
     global body_mapping

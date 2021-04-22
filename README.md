@@ -24,3 +24,6 @@
             ```
             You should substitute the PyKinect2.py and PyKinectRuntime.py files with the updated ones form the [github repository](https://github.com/Kinect/PyKinect2)
 
+* Pepper
+    * install naoqi libraries
+    * install pyzmq for inter process communication
