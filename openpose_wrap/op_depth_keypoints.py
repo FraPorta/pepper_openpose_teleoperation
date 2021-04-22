@@ -52,87 +52,100 @@ def display(datums):
     color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
     cv2.imshow("OpenPose 1.7.0", color_img_resize)
     
+    # check if the user wants to exit
     key = cv2.waitKey(1)
     return (key == 27)
 
-
+'''
 def displayInput(datums):
     datum = datums[0]
     cv2.imshow("Kinect Input Color Image", datum.cvInputData)
     
     key = cv2.waitKey(1)
     return (key == 27)
-
+'''
 
 def getDepthKeypoints(datums):
     datum = datums[0]
     # get Body keypoints
     body_keypoints = datum.poseKeypoints
     
-    # create dictionary for keypoints in depth/world coordinates
-    wp_dict = {}
-    dp_dict = {}
-    dv_dict = {}
+    try:
+        # create dictionary for keypoints in depth/world coordinates
+        wp_dict = {}
+        dp_dict = {}
+        dv_dict = {}
+        # initialize variables
+        color_point = [0, 0]
+        
+        if kinect.has_new_depth_frame():
+            # get last depth frame
+            depth_frame = kinect.get_last_depth_frame()
+            
+            # Reshape from 1D frame to 2D image
+            depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
+            
+            # proceed only if a person was detected
+            if body_keypoints is not None:
+                for i in range(1,8): # extract only the needed depth points (upper body limbs)
+                    x = body_keypoints[0,i,0]
+                    y = body_keypoints[0,i,1]
+                    color_point = [int(x),int(y)]
+                    
+                    # check if the keypoint was detected
+                    if color_point[0] > 0 and color_point[1] > 0 : 
+                    
+                        # map color point to correspondent depth point  
+                        depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
+                        
+                        if depth_point[0] < depth_height and depth_point[1] < depth_width and |
+                           not math.isinf(depth_point[0]) and not math.isinf(depth_point[1]):
+
+                            # extract depth value from depth image
+                            depth_value = depth_img[depth_point[1], depth_point[0]]
+                            
+                            # Add depth points and value to respective dictionaries
+                            dp_dict[i] = depth_point
+                            dv_dict[i] = depth_value
+
+                            # Add world point to the dictionary if the depth value is not zero and not higher than 3 meters
+                            if depth_value > 0 and depth_value < 3000:
+                                # Map depth point to world point (x, y, z in meters in camera frame)
+                                world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
+                                wp_dict[i] = world_point
+                                
+            '''
+            print("Depth points:")
+            print(dp_dict)
+            print(dv_dict)
+            print("World points:")
+            print(wp_dict)
+            '''
+
+            ## Show keypoints on depth image
+            # Apply colormap to depth image
+            depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 2000 mm
+
+            # draw keypoints markers on depth image if they were detected
+            if len(dp_dict) != 0:
+                for i in dp_dict.keys():
+                    cv2.drawMarker(depth_colormap, (dp_dict[i][0], dp_dict[i][1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
+            # show image
+            cv2.imshow('Depth image with keypoints', depth_colormap)
+
+            # show image for at least 1 ms and check if the user wants to exit
+            key = cv2.waitKey(1)
+            return (key == 27)
+            
+        else:
+            return False
+    except Exception as e:
+        print(e)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        print(exc_type, exc_tb.tb_lineno)
+        sys.exit(-1)
+        
     
-    if kinect.has_new_depth_frame():
-        # get last depth frame
-        depth_frame = kinect.get_last_depth_frame()
-        
-        # Reshape from 1D frame to 2D image
-        depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
-        
-        for i in range(1,8): # extract only the needed depth points (upper body limbs)
-            x = body_keypoints[0,i,0]
-            y = body_keypoints[0,i,1]
-            color_point = [int(x),int(y)]
-            
-            # if color_point is not zero (The keypoint was not detected)
-            if color_point[0] != 0 and color_point[1] != 0 : 
-            
-                # map color point to correspondent depth point  
-                depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
-                
-                if depth_point[0] < depth_height and depth_point[1] < depth_width:
-                    if (not math.isinf(depth_point[0])) and (not math.isinf(depth_point[1])):
-                        depth_value = depth_img[depth_point[1], depth_point[0]]
-                        
-                        # Add depth points and value to respective dictionaries
-                        dp_dict[i] = depth_point
-                        dv_dict[i] = depth_value
-                        
-                        # Map depth point to world point (x, y, z in meters in camera frame)
-                        world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
-                        
-                        if depth_value != 0:
-                            # Add world point to the dictionary
-                            wp_dict[i] = world_point
-                
-        # show keypoints on depth image
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/1500), cv2.COLORMAP_JET) # Scale to display from 0 mm to 1500 mm
-        # draw markers for keypoints on depth image
-        for i in dp_dict.keys():
-            cv2.drawMarker(depth_colormap, (dp_dict[i][0], dp_dict[i][1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
-        # show image
-        cv2.imshow('Depth image with keypoints', depth_colormap)
-        
-        # print(dp_dict)
-        # print(dv_dict)
-        print(wp_dict)
-        
-        '''
-        data_list = list(wp_dict.values())
-        data = np.array(data_list)
-        for i in wp_dict.keys():
-            xdata = data[:,0]
-            ydata = data[:,1]
-            zdata = data[:,2]
-        
-        ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens');
-        plt.show()
-        '''
-        
-        key = cv2.waitKey(1)
-        return (key == 27)
             
             
 
@@ -172,7 +185,6 @@ try:
     params["camera"] = "-1"                     # automatically select camera input (-1)
     params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
     params["number_people_max"] = "1"           # limit the number of recognized people to 1
-     
 
     # Add others in path?
     for i in range(0, len(args[1])):
