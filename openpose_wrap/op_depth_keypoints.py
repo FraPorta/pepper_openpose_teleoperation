@@ -46,6 +46,8 @@ import pykinect_lib.utils_PyKinectV2 as utils
 #     {25, "Background"}
 # };
 
+
+
 def display(datums):
     datum = datums[0]
     color_img = datum.cvOutputData
@@ -98,8 +100,7 @@ def getDepthKeypoints(datums):
                         # map color point to correspondent depth point  
                         depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
                         
-                        if depth_point[0] < depth_height and depth_point[1] < depth_width and |
-                           not math.isinf(depth_point[0]) and not math.isinf(depth_point[1]):
+                        if depth_point[0] < depth_height and depth_point[1] < depth_width and not math.isinf(depth_point[0]) and not math.isinf(depth_point[1]):
 
                             # extract depth value from depth image
                             depth_value = depth_img[depth_point[1], depth_point[0]]
@@ -113,14 +114,29 @@ def getDepthKeypoints(datums):
                                 # Map depth point to world point (x, y, z in meters in camera frame)
                                 world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
                                 wp_dict[i] = world_point
-                                
+
             '''
             print("Depth points:")
             print(dp_dict)
             print(dv_dict)
             print("World points:")
-            print(wp_dict)
+            
             '''
+            # print(dv_dict)
+            # print(wp_dict)
+
+            # Print keypoints with depth errors (0          -> keypoint not detcted anymore
+            #                                    high value -> background point detcted instead of keypoint )
+            # These keypoints are discarded
+            if dv_dict.keys() != wp_dict.keys():
+                print("Keypoints with depth error:")
+                set_dv = set(dv_dict.keys())
+                set_wp = set(wp_dict.keys())
+                missing_keypoints = set_dv - set_wp
+                missing_keypoints = list(missing_keypoints)
+                for i in missing_keypoints:
+                    print(body_mapping[i])
+                    print(dv_dict.get(i))
 
             ## Show keypoints on depth image
             # Apply colormap to depth image
@@ -145,11 +161,9 @@ def getDepthKeypoints(datums):
         print(exc_type, exc_tb.tb_lineno)
         sys.exit(-1)
         
-    
-            
-            
 
 try:
+    global body_mapping
     # Import Openpose (Windows/Ubuntu/OSX)
     home = str(Path.home())
     try:
@@ -210,6 +224,9 @@ try:
     opWrapper.configure(params)
     opWrapper.start()
     #opWrapper.execute()
+
+    poseModel = op.PoseModel.BODY_25
+    body_mapping = op.getPoseBodyPartMapping(poseModel)
     
     depth_width, depth_height = kinect.depth_frame_desc.Width, kinect.depth_frame_desc.Height # Default: 512, 424
     color_width, color_height = kinect.color_frame_desc.Width, kinect.color_frame_desc.Height # Default: 1920, 1080
@@ -223,18 +240,12 @@ try:
 
         if opWrapper.waitAndPop(datumProcessed):
             
-            # Map color space keypoints to depth space 
-            userWantsToExit = getDepthKeypoints(datumProcessed)
-            # Display OpenPose output image
-            userWantsToExit = display(datumProcessed)
-
-            #if not args[0].no_display:
-                # Display OpenPose output image
-                # userWantsToExit = display(datumProcessed)
+            if not args[0].no_display:
                 # Map color space keypoints to depth space 
-                # userWantsToExit = getDepthKeypoints(datumProcessed)
-                
-                    
+                userWantsToExit = getDepthKeypoints(datumProcessed)
+                # Display OpenPose output image
+                userWantsToExit = display(datumProcessed)
+
         else:
             break
         
