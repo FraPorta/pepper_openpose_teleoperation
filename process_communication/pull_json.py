@@ -21,6 +21,5 @@ while True:
     print(wp_dict.values())
 
 
-
 sock.close()
 ctx.term()

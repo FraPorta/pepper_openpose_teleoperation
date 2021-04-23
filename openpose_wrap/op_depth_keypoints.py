@@ -17,6 +17,7 @@ from pykinect2 import PyKinectRuntime
 # local imports
 from pykinect_lib.map_functions import *
 import pykinect_lib.utils_PyKinectV2 as utils
+from socket_send import SocketSend 
 
 # Result for BODY_25 (25 body parts consisting of COCO + foot)
 #     {0,  "Nose"},
@@ -115,12 +116,12 @@ def getDepthKeypoints(datums):
                                 # Map depth point to world point (x, y, z in meters in camera frame)
                                 world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
                                 wp_dict[i] = world_point
-
-            # print(dv_dict)
-            # print(wp_dict)
             
             # Save keypoints on a Json file
-            save3DKeypoints(wp_dict)
+            # save3DKeypoints(wp_dict)
+
+            # Send keypoints to another python script via socket
+            ss.send(wp_dict)
 
             # Print keypoints with depth errors (0          -> keypoint not detcted anymore
             #                                    high value -> background point detcted instead of keypoint)
@@ -171,7 +172,6 @@ def save3DKeypoints(dictionary):
         sys.exit(-1)
 
 try:
-    global body_mapping
     # Import Openpose (Windows/Ubuntu/OSX)
     home = str(Path.home())
     try:
@@ -233,11 +233,15 @@ try:
     opWrapper.start()
     #opWrapper.execute()
 
+    # get dictionary for body parts mapping
     poseModel = op.PoseModel.BODY_25
     body_mapping = op.getPoseBodyPartMapping(poseModel)
     
     depth_width, depth_height = kinect.depth_frame_desc.Width, kinect.depth_frame_desc.Height # Default: 512, 424
     color_width, color_height = kinect.color_frame_desc.Width, kinect.color_frame_desc.Height # Default: 1920, 1080
+
+    # Initialize socket to send keypoints
+    ss = SocketSend()
 
     # Main loop
     userWantsToExit = False
