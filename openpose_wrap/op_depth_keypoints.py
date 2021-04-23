@@ -1,5 +1,5 @@
 # From Python
-# It requires OpenCV installed for Python
+# It requires OpenCV and Pykinect2 installed for Python
 import sys
 import cv2
 import os
@@ -9,15 +9,20 @@ from pathlib import Path
 import numpy as np
 import math
 import json
+import time
 
-# kinect libraries
+# Kinect libraries
 from pykinect2.PyKinectV2 import *
 from pykinect2 import PyKinectV2
 from pykinect2 import PyKinectRuntime
-# local imports
+
+# Local imports
 from pykinect_lib.map_functions import *
 import pykinect_lib.utils_PyKinectV2 as utils
 from socket_send import SocketSend 
+
+depth_fps_counter = 0
+color_fps_counter = 0
 
 # Result for BODY_25 (25 body parts consisting of COCO + foot)
 #     {0,  "Nose"},
@@ -49,27 +54,25 @@ from socket_send import SocketSend
 # };
 
 
-
-def display(datums):
+## function display
+# 
+# Display OpenPose output image
+def display(datums, fps):
     datum = datums[0]
     color_img = datum.cvOutputData
+
     color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
+    cv2.putText(color_img_resize,str(fps)+" FPS",(5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
     cv2.imshow("OpenPose 1.7.0", color_img_resize)
     
     # check if the user wants to exit
     key = cv2.waitKey(1)
     return (key == 27)
 
-'''
-def displayInput(datums):
-    datum = datums[0]
-    cv2.imshow("Kinect Input Color Image", datum.cvInputData)
-    
-    key = cv2.waitKey(1)
-    return (key == 27)
-'''
-
-def getDepthKeypoints(datums):
+## function displayDepthKeypoints
+#
+# display keypoints on depth image and calculate and send the camera frame 3d points to a socket publisher
+def displayDepthKeypoints(datums):
     datum = datums[0]
     # get Body keypoints
     body_keypoints = datum.poseKeypoints
@@ -83,15 +86,19 @@ def getDepthKeypoints(datums):
         color_point = [0, 0]
         
         if kinect.has_new_depth_frame():
+
             # get last depth frame
             depth_frame = kinect.get_last_depth_frame()
             
             # Reshape from 1D frame to 2D image
             depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
+
+            # Apply colormap to depth image
+            depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 2000 mm
             
             # proceed only if a person was detected
             if body_keypoints is not None:
-                for i in range(1,8): # extract only the needed depth points (upper body limbs)
+                for i in range(0,9): # extract only the needed depth points (upper body limbs)
                     x = body_keypoints[0,i,0]
                     y = body_keypoints[0,i,1]
                     color_point = [int(x),int(y)]
@@ -111,46 +118,38 @@ def getDepthKeypoints(datums):
                             dp_dict[i] = depth_point
                             dv_dict[i] = depth_value
 
+                            # Draw keypoint on depth image
+                            cv2.drawMarker(depth_colormap, (depth_point[0], depth_point[1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
+
                             # Add world point to the dictionary if the depth value is not zero and not higher than 3 meters
                             if depth_value > 0 and depth_value < 3000:
                                 # Map depth point to world point (x, y, z in meters in camera frame)
                                 world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
                                 wp_dict[i] = world_point
             
-            # Save keypoints on a Json file
+            # Save keypoints in a Json file
             # save3DKeypoints(wp_dict)
 
-            # Send keypoints to another python script via socket
+            # Send keypoints to another python script via socket (PUB/SUB)
             ss.send(wp_dict)
 
             # Print keypoints with depth errors (0          -> keypoint not detcted anymore
             #                                    high value -> background point detcted instead of keypoint)
             # These keypoints were discarded
             if dv_dict.keys() != wp_dict.keys():
-                print("Keypoints with depth error:")
                 set_dv = set(dv_dict.keys())
                 set_wp = set(wp_dict.keys())
                 missing_keypoints = set_dv - set_wp
                 missing_keypoints = list(missing_keypoints)
                 for i in missing_keypoints:
-                    print(body_mapping[i])
-                    print(dv_dict.get(i))
+                    print("Error detecting %s: depth value %i" % (body_mapping[i], dv_dict.get(i)))
 
-            ## Show keypoints on depth image
-            # Apply colormap to depth image
-            depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 2000 mm
-
-            # Draw keypoints markers on depth image if they were detected
-            if len(dp_dict) != 0:
-                for i in dp_dict.keys():
-                    cv2.drawMarker(depth_colormap, (dp_dict[i][0], dp_dict[i][1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
-            # Show image
+            # Show depth image with markers
             cv2.imshow('Depth image with keypoints', depth_colormap)
 
             # Show image for at least 1 ms and check if the user wants to exit
             key = cv2.waitKey(1)
             return (key == 27)
-            
         else:
             return False
     except Exception as e:
@@ -159,6 +158,7 @@ def getDepthKeypoints(datums):
         print(exc_type, exc_tb.tb_lineno)
         sys.exit(-1)
 
+# Function to save keypoints in a json file
 def save3DKeypoints(dictionary):
     # write camera frame keypoints on a json file
     try:
@@ -220,10 +220,6 @@ try:
             key = curr_item.replace('-','')
             if key not in params: params[key] = next_item
 
-    # Construct it from system arguments
-    # op.init_argv(args[1])
-    # oppython = op.OpenposePython()
-    
     # starting kinect to acquire depth data
     kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color | PyKinectV2.FrameSourceTypes_Depth)
 
@@ -231,9 +227,8 @@ try:
     opWrapper = op.WrapperPython(op.ThreadManagerMode.AsynchronousOut)
     opWrapper.configure(params)
     opWrapper.start()
-    #opWrapper.execute()
-
-    # get dictionary for body parts mapping
+    
+    # Get dictionary for body parts mapping
     poseModel = op.PoseModel.BODY_25
     body_mapping = op.getPoseBodyPartMapping(poseModel)
     
@@ -243,6 +238,9 @@ try:
     # Initialize socket to send keypoints
     ss = SocketSend()
 
+    # Initialize time counter
+    t0 = time.perf_counter()
+    t1 = t0
     # Main loop
     userWantsToExit = False
     while not userWantsToExit:
@@ -250,16 +248,28 @@ try:
         # Pop frame
         datumProcessed = op.VectorDatum()
 
+        # Proceed if OpenPose processed frame is available 
         if opWrapper.waitAndPop(datumProcessed):
             
             if not args[0].no_display:
-                # Map color space keypoints to depth space 
-                userWantsToExit = getDepthKeypoints(datumProcessed)
-                # Display OpenPose output image
-                userWantsToExit = display(datumProcessed)
 
+                # Calculate fps 
+                time_elapsed_0 = t1 - t0
+                t1 = time.perf_counter()
+                time_elapsed_1 = t1 - t0
+                fps = int(1/float(time_elapsed_1 - time_elapsed_0))
+                
+                # Display OpenPose output image
+                userWantsToExit = display(datumProcessed, fps)
+
+                # Map color space keypoints to depth space 
+                userWantsToExit = displayDepthKeypoints(datumProcessed)
+
+                
         else:
             break
+
+        
         
 except Exception as e:
     print(e)
