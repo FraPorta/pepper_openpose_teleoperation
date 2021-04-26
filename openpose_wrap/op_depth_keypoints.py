@@ -10,6 +10,7 @@ import numpy as np
 import math
 import json
 import time
+import pyglview
 
 # Kinect libraries
 from pykinect2.PyKinectV2 import *
@@ -57,12 +58,13 @@ color_fps_counter = 0
 ## function display
 # 
 # Display OpenPose output image
-def display(datums, fps):
+def display(datums, fps, frame):
     #datum = datums[0]
     color_img = datums.cvOutputData
 
     color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
     cv2.putText(color_img_resize, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
+    cv2.putText(color_img_resize, str(frame)+" frame", (5, 410), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
     cv2.imshow("OpenPose 1.7.0", color_img_resize)
     
     # check if the user wants to exit
@@ -71,8 +73,8 @@ def display(datums, fps):
 
 ## function displayDepthKeypoints
 #
-# display keypoints on depth image and calculate and send the camera frame 3d points to a socket publisher
-def displayDepthKeypoints(datums, depth_frame, fps, display):
+# display keypoints on depth image and calculate and send the camera frame 3D points to a socket publisher
+def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
 
     # get Body keypoints
     body_keypoints = datums.poseKeypoints
@@ -143,6 +145,7 @@ def displayDepthKeypoints(datums, depth_frame, fps, display):
 
             # Write FPS on image
             cv2.putText(depth_colormap, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
+            cv2.putText(depth_colormap, str(frame)+" frame", (5, 410), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
             # Show depth image with markers
             cv2.imshow('Depth image with keypoints', depth_colormap)
 
@@ -203,7 +206,7 @@ try:
     # Change path to point to the models folder 
     #params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
     params["model_folder"] = home + '/openpose/models/'
-    # params["net_resolution"] = "-1x256"         # select net resolution (necessary for low end graphic cards)
+    params["net_resolution"] = "-1x320"         # select net resolution (necessary for low end graphic cards)
     # params["camera"] = "-1"                     # automatically select camera input (-1)
     # params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
     params["number_people_max"] = "1"           # limit the number of recognized people to 1
@@ -220,11 +223,10 @@ try:
             key = curr_item.replace('-','')
             if key not in params: params[key] = next_item
 
-    # starting kinect to acquire depth data
+    # Starting Kinect to acquire depth and color data
     kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color | PyKinectV2.FrameSourceTypes_Depth)
 
     # Starting OpenPose
-    # opWrapper = op.WrapperPython(op.ThreadManagerMode.AsynchronousOut)
     opWrapper = op.WrapperPython(op.ThreadManagerMode.Asynchronous)
     opWrapper.configure(params)
     opWrapper.start()
@@ -241,9 +243,9 @@ try:
     ss = SocketSend()
 
     # Initialize time counter
-    t0 = time.perf_counter()
-    t1 = t0
+    t1 = time.perf_counter()
 
+    frame = 0
     # Main loop
     userWantsToExit = False
     while not userWantsToExit:
@@ -271,18 +273,26 @@ try:
             if opWrapper.emplaceAndPop(op.VectorDatum([datum])):
                 if not args[0].no_display:
 
+                    # Update frame number
+                    frame += 1
+
                     # Calculate fps 
-                    time_elapsed_0 = t1 - t0
+                    time_elapsed = time.perf_counter() - t1
                     t1 = time.perf_counter()
-                    time_elapsed_1 = t1 - t0
-                    fps = int(1/float(time_elapsed_1 - time_elapsed_0))
+
+                    # print("Time %f" % float(time_elapsed_1))
+                    fps = math.floor(1/float(time_elapsed))
+
+                    # Show fps if display is disabled 
+                    # print("fps: "+str(fps))
 
                     # Map color space keypoints to depth space 
-                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, display=True)
+                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, display=True)
 
                     # Display OpenPose output image
-                    # userWantsToExit = display(datum, fps)
-  
+                    userWantsToExit = display(datum, fps, frame)
+
+                    
             else:
                 break
 
