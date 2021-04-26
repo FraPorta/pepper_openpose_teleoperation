@@ -206,10 +206,14 @@ try:
     # Change path to point to the models folder 
     #params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
     params["model_folder"] = home + '/openpose/models/'
-    params["net_resolution"] = "-1x320"         # select net resolution (necessary for low end graphic cards)
+    params["net_resolution"] = "-1x304"         # select net resolution (necessary for low end graphic cards)
     # params["camera"] = "-1"                     # automatically select camera input (-1)
     # params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
     params["number_people_max"] = "1"           # limit the number of recognized people to 1
+    # params["process_real_time"] = "true"
+    params["net_resolution_dynamic"] = "0"      # recommended 1 for small GPUs (to avoid out of memory"" 
+                                                # errors but maximize speed) and 0 for big GPUs (for maximum accuracy and speed).");
+
 
     # Add others in path?
     for i in range(0, len(args[1])):
