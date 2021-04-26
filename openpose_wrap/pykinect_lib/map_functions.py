@@ -96,13 +96,16 @@ def color_point_2_depth_point(kinect, depth_space_point, depth_frame_data, color
     import ctypes
     import math
     # Map Color to Depth Space
+    color_width = int(1920)
+    color_height = int(1080)
+
     # Make sure that the kinect was able to obtain at least one color and depth frame, else the depth_x and depth_y values will go to infinity
-    color2depth_points_type = depth_space_point * np.int(1920 * 1080)
+    color2depth_points_type = depth_space_point * np.int(color_width * color_height)
     color2depth_points = ctypes.cast(color2depth_points_type(), ctypes.POINTER(depth_space_point))
-    kinect._mapper.MapColorFrameToDepthSpace(ctypes.c_uint(512 * 424), depth_frame_data, ctypes.c_uint(1920 * 1080), color2depth_points)
+    kinect._mapper.MapColorFrameToDepthSpace(ctypes.c_uint(512 * 424), depth_frame_data, ctypes.c_uint(color_width * color_height), color2depth_points)
     # Where color_point = [xcolor, ycolor]
-    depth_x = color2depth_points[color_point[1] * 1920 + color_point[0] - 1].x
-    depth_y = color2depth_points[color_point[1] * 1920 + color_point[0] - 1].y
+    depth_x = color2depth_points[color_point[1] * color_width + color_point[0] - 1].x
+    depth_y = color2depth_points[color_point[1] * color_width + color_point[0] - 1].y
     #print(depth_x)
     #print(depth_y)
     if math.isinf(depth_x) or math.isinf(depth_y):

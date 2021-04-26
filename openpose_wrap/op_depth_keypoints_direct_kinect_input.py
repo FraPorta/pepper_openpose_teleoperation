@@ -58,11 +58,11 @@ color_fps_counter = 0
 # 
 # Display OpenPose output image
 def display(datums, fps):
-    #datum = datums[0]
-    color_img = datums.cvOutputData
+    datum = datums[0]
+    color_img = datum.cvOutputData
 
     color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
-    cv2.putText(color_img_resize, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
+    cv2.putText(color_img_resize,str(fps)+" FPS",(5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
     cv2.imshow("OpenPose 1.7.0", color_img_resize)
     
     # check if the user wants to exit
@@ -72,10 +72,10 @@ def display(datums, fps):
 ## function displayDepthKeypoints
 #
 # display keypoints on depth image and calculate and send the camera frame 3d points to a socket publisher
-def displayDepthKeypoints(datums, depth_frame, fps, display):
-
+def displayDepthKeypoints(datums, depth_frame):
+    datum = datums[0]
     # get Body keypoints
-    body_keypoints = datums.poseKeypoints
+    body_keypoints = datum.poseKeypoints
     
     try:
         # create dictionary for keypoints in depth/world coordinates
@@ -84,12 +84,12 @@ def displayDepthKeypoints(datums, depth_frame, fps, display):
         dv_dict = {}
         # initialize variables
         color_point = [0, 0]
-        
+            
         # Reshape from 1D frame to 2D image
         depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
-        if display:
-            # Apply colormap to depth image
-            depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 2000 mm
+
+        # Apply colormap to depth image
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 2000 mm
         
         # proceed only if a person was detected
         if body_keypoints is not None:
@@ -113,23 +113,21 @@ def displayDepthKeypoints(datums, depth_frame, fps, display):
                         dp_dict[i] = depth_point
                         dv_dict[i] = depth_value
 
-                        if display:
-                            # Draw keypoint on depth image
-                            cv2.drawMarker(depth_colormap, (depth_point[0], depth_point[1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
+                        # Draw keypoint on depth image
+                        cv2.drawMarker(depth_colormap, (depth_point[0], depth_point[1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
 
                         # Add world point to the dictionary if the depth value is not zero and not higher than 3 meters
                         if depth_value > 0 and depth_value < 3000:
                             # Map depth point to world point (x, y, z in meters in camera frame)
                             world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
                             wp_dict[i] = world_point
-        
-        # Save keypoints in a Json file
-        # save3DKeypoints(wp_dict)
+            
+            # Save keypoints in a Json file
+            # save3DKeypoints(wp_dict)
 
-        # Send keypoints to another python script via socket (PUB/SUB)
-        ss.send(wp_dict)
+            # Send keypoints to another python script via socket (PUB/SUB)
+            ss.send(wp_dict)
 
-        if display:
             # Print keypoints with depth errors (0          -> keypoint not detcted anymore
             #                                    high value -> background point detcted instead of keypoint)
             # These keypoints were discarded
@@ -141,35 +139,32 @@ def displayDepthKeypoints(datums, depth_frame, fps, display):
                 for i in missing_keypoints:
                     print("Error detecting %s: depth value %i" % (body_mapping[i], dv_dict.get(i)))
 
-            # Write FPS on image
-            cv2.putText(depth_colormap, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
             # Show depth image with markers
             cv2.imshow('Depth image with keypoints', depth_colormap)
 
-        # Show image for at least 1 ms and check if the user wants to exit
-        key = cv2.waitKey(1)
-        return (key == 27)
-        # else:
-        #     return False
+            # Show image for at least 1 ms and check if the user wants to exit
+            key = cv2.waitKey(1)
+            return (key == 27)
+        else:
+            return False
     except Exception as e:
         print(e)
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print(exc_type, exc_tb.tb_lineno)
         sys.exit(-1)
 
+# Function to save keypoints in a json file
+def save3DKeypoints(dictionary):
+    # write camera frame keypoints on a json file
+    try:
+        with open("json_files/3Dkeypoints.json", "w") as write_file:
+            json.dump(dictionary, write_file, indent=4)
 
-# # Function to save keypoints in a json file
-# def save3DKeypoints(dictionary):
-#     # write camera frame keypoints on a json file
-#     try:
-#         with open("json_files/3Dkeypoints.json", "w") as write_file:
-#             json.dump(dictionary, write_file, indent=4)
-
-#     except (OSError, IOError) as e:
-#         print(e)
-#         exc_type, exc_obj, exc_tb = sys.exc_info()
-#         print(exc_type, exc_tb.tb_lineno)
-#         sys.exit(-1)
+    except (OSError, IOError) as e:
+        print(e)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        print(exc_type, exc_tb.tb_lineno)
+        sys.exit(-1)
 
 try:
     # Import Openpose (Windows/Ubuntu/OSX)
@@ -204,8 +199,8 @@ try:
     #params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
     params["model_folder"] = home + '/openpose/models/'
     # params["net_resolution"] = "-1x256"         # select net resolution (necessary for low end graphic cards)
-    # params["camera"] = "-1"                     # automatically select camera input (-1)
-    # params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
+    params["camera"] = "-1"                     # automatically select camera input (-1)
+    params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
     params["number_people_max"] = "1"           # limit the number of recognized people to 1
 
     # Add others in path?
@@ -224,8 +219,7 @@ try:
     kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color | PyKinectV2.FrameSourceTypes_Depth)
 
     # Starting OpenPose
-    # opWrapper = op.WrapperPython(op.ThreadManagerMode.AsynchronousOut)
-    opWrapper = op.WrapperPython(op.ThreadManagerMode.Asynchronous)
+    opWrapper = op.WrapperPython(op.ThreadManagerMode.AsynchronousOut)
     opWrapper.configure(params)
     opWrapper.start()
     
@@ -233,7 +227,6 @@ try:
     poseModel = op.PoseModel.BODY_25
     body_mapping = op.getPoseBodyPartMapping(poseModel)
     
-    # Extract depth and color images width and height
     depth_width, depth_height = kinect.depth_frame_desc.Width, kinect.depth_frame_desc.Height # Default: 512, 424
     color_width, color_height = kinect.color_frame_desc.Width, kinect.color_frame_desc.Height # Default: 1920, 1080
 
@@ -243,32 +236,21 @@ try:
     # Initialize time counter
     t0 = time.perf_counter()
     t1 = t0
-
     # Main loop
     userWantsToExit = False
     while not userWantsToExit:
 
-        if kinect.has_new_depth_frame() and kinect.has_new_color_frame():
-            
-            # Get Kinect last depth frame
+        if kinect.has_new_depth_frame():
+
+            # get last depth frame
             depth_frame = kinect.get_last_depth_frame()
-            # Get Kinect last color frame
-            color_frame = kinect.get_last_color_frame()
+        
+            # Pop frame
+            datumProcessed = op.VectorDatum()
 
-            # Reshape input color image
-            color_img = color_frame.reshape(((color_height, color_width, 4))).astype(np.uint8)
-            
-            # Convert image to BGR to make it viable as OpenPose input
-            color_img_bgr = cv2.cvtColor(color_img, cv2.COLOR_BGRA2BGR)
-
-            # Instantiate OpenPose Datum object
-            datum = op.Datum()
-
-            # Use kinect color image as InputData for OpenPose 
-            datum.cvInputData = color_img_bgr
-
-            # Proceed if OpenPose processed the frame 
-            if opWrapper.emplaceAndPop(op.VectorDatum([datum])):
+            # Proceed if OpenPose processed frame is available 
+            if opWrapper.waitAndPop(datumProcessed):
+                
                 if not args[0].no_display:
 
                     # Calculate fps 
@@ -276,13 +258,14 @@ try:
                     t1 = time.perf_counter()
                     time_elapsed_1 = t1 - t0
                     fps = int(1/float(time_elapsed_1 - time_elapsed_0))
+                    
+                    # Display OpenPose output image
+                    userWantsToExit = display(datumProcessed, fps)
 
                     # Map color space keypoints to depth space 
-                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, display=True)
+                    userWantsToExit = displayDepthKeypoints(datumProcessed, depth_frame)
 
-                    # Display OpenPose output image
-                    # userWantsToExit = display(datum, fps)
-  
+                    
             else:
                 break
 

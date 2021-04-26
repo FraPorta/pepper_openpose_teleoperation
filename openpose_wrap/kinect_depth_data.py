@@ -18,6 +18,9 @@ kinect = PyKinectRuntime.PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color |
 depth_width, depth_height = kinect.depth_frame_desc.Width, kinect.depth_frame_desc.Height # Default: 512, 424
 color_width, color_height = kinect.color_frame_desc.Width, kinect.color_frame_desc.Height # Default: 1920, 1080
 
+# Initialize time counter
+t0 = time.perf_counter()
+t1 = t0
 
 while True:
     ##############################
@@ -55,11 +58,19 @@ while True:
         ######################################
         color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
         depth_colormap   = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 1500 mm
-        
+
+        # Calculate fps 
+        time_elapsed_0 = t1 - t0
+        t1 = time.perf_counter()
+        time_elapsed_1 = t1 - t0
+        fps = int(1/float(time_elapsed_1 - time_elapsed_0))
+
+        cv2.putText(color_img_resize, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
         cv2.imshow('color', color_img_resize)                       # (540, 960, 4)
         #cv2.imshow('align color with depth image', align_color_img) # (424, 512)
+        cv2.putText(depth_colormap, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
         cv2.imshow('depth', depth_colormap)                         # (424, 512)
-        cv2.imshow('depth original', depth_img)
+        # cv2.imshow('depth original', depth_img)
 
     key = cv2.waitKey(30)
     if key==27: # Press esc to break the loop
