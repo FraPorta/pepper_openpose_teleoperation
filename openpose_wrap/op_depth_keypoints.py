@@ -22,9 +22,6 @@ from pykinect_lib.map_functions import *
 import pykinect_lib.utils_PyKinectV2 as utils
 from socket_send import SocketSend 
 
-depth_fps_counter = 0
-color_fps_counter = 0
-
 # Result for BODY_25 (25 body parts consisting of COCO + foot)
 #     {0,  "Nose"},
 #     {1,  "Neck"},
@@ -54,6 +51,34 @@ color_fps_counter = 0
 #     {25, "Background"}
 # };
 
+depth_fps_counter = 0
+color_fps_counter = 0
+dv_previous = {}
+
+## function checkOcclusion
+#
+# check and manage the case where a keypoint is occluded
+def checkOcclusion(bodyPart, prev_depths, current_depth):
+    threshShoulders = 150    # mm
+    threshElbows = 150       # mm
+
+    new_depth = current_depth
+    # Check if the keypoint is present in both dictionaries
+    if bodyPart in prev_depths:
+        # Case shoulders and neck
+        if bodyPart == 1 or bodyPart == 2 or bodyPart == 5: 
+            # If the value is above or under the threshold, mantain the previous depth value
+            if abs(prev_depths.get(bodyPart) - current_depth) > threshShoulders:
+                new_depth = prev_depths.get(bodyPart)
+                
+        # Case elbows
+        if bodyPart == 3 or bodyPart == 6:
+            # If the value is above or under the threshold, mantain the previous depth value
+            if abs(prev_depths.get(bodyPart) - current_depth) > threshElbows:
+                new_depth = prev_depths.get(bodyPart)
+             
+    
+    return new_depth
 
 ## function display
 # 
@@ -64,7 +89,7 @@ def display(datums, fps, frame):
 
     color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
     cv2.putText(color_img_resize, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
-    cv2.putText(color_img_resize, str(frame)+" frame", (5, 410), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
+    cv2.putText(color_img_resize, str(frame)+" frame", (5, 500), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
     cv2.imshow("OpenPose 1.7.0", color_img_resize)
     
     # check if the user wants to exit
@@ -75,6 +100,7 @@ def display(datums, fps, frame):
 #
 # display keypoints on depth image and calculate and send the camera frame 3D points to a socket publisher
 def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
+    global dv_previous
 
     # get Body keypoints
     body_keypoints = datums.poseKeypoints
@@ -84,6 +110,7 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         wp_dict = {}
         dp_dict = {}
         dv_dict = {}
+
         # initialize variables
         color_point = [0, 0]
         
@@ -111,6 +138,10 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
                         # extract depth value from depth image
                         depth_value = depth_img[depth_point[1], depth_point[0]]
                         
+                        # Check if the keypoint is occluded and if it is, mantain the previous depth value 
+                        if dv_previous and depth_value > 0 and depth_value < 3000:
+                            depth_value = checkOcclusion(i, dv_previous, depth_value)
+
                         # Add depth points and value to respective dictionaries
                         dp_dict[i] = depth_point
                         dv_dict[i] = depth_value
@@ -142,6 +173,9 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
                 missing_keypoints = list(missing_keypoints)
                 for i in missing_keypoints:
                     print("Error detecting %s: depth value %i" % (body_mapping[i], dv_dict.get(i)))
+
+            # Save depth values for the next loop
+            dv_previous = dv_dict
 
             # Write FPS on image
             cv2.putText(depth_colormap, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
@@ -250,6 +284,7 @@ try:
     t1 = time.perf_counter()
 
     frame = 0
+
     # Main loop
     userWantsToExit = False
     while not userWantsToExit:
