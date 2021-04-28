@@ -57,28 +57,40 @@ dv_previous = {}
 
 ## function checkOcclusion
 #
-# check and manage the case where a keypoint is occluded
+# check if a keypoint is occluded by something
 def checkOcclusion(bodyPart, prev_depths, current_depth):
-    threshShoulders = 150    # mm
-    threshElbows = 150       # mm
+    # threshShoulders = 50   # mm
+    # threshElbows = 70      # mm
+    threshShoulders = 80   # mm
+    threshElbows = 90      # mm
 
-    new_depth = current_depth
+    # new_depth = current_depth
     # Check if the keypoint is present in both dictionaries
     if bodyPart in prev_depths:
-        # Case shoulders and neck
+        diff = int(prev_depths.get(bodyPart)) - int(current_depth)
+        # Case neck and shoulders
         if bodyPart == 1 or bodyPart == 2 or bodyPart == 5: 
-            # If the value is above or under the threshold, mantain the previous depth value
-            if abs(prev_depths.get(bodyPart) - current_depth) > threshShoulders:
-                new_depth = prev_depths.get(bodyPart)
-                
+            # If the value is above the threshold ( the new keypoint is much closer to the camera ) the keypoint is occluded
+            if diff > threshShoulders:
+                print("Body part occluded: %s" % body_mapping.get(bodyPart))
+                print("Difference (mm): %i" % diff)
+                if diff > 1000:
+                    return False
+                else:
+                    # new_depth = prev_depths.get(bodyPart)
+                    return True
         # Case elbows
         if bodyPart == 3 or bodyPart == 6:
-            # If the value is above or under the threshold, mantain the previous depth value
-            if abs(prev_depths.get(bodyPart) - current_depth) > threshElbows:
-                new_depth = prev_depths.get(bodyPart)
-             
-    
-    return new_depth
+            # If the value is above the threshold ( the new keypoint is much closer to the camera ) the keypoint is occluded
+            if diff > threshElbows:
+                print("Body part occluded: %s" % body_mapping.get(bodyPart))
+                print("Difference (mm): %i" % diff)
+                # new_depth = prev_depths.get(bodyPart)
+                if diff > 1000:
+                    return False
+                else:
+                    return True
+    return False
 
 ## function display
 # 
@@ -89,7 +101,7 @@ def display(datums, fps, frame):
 
     color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
     cv2.putText(color_img_resize, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
-    cv2.putText(color_img_resize, str(frame)+" frame", (5, 500), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
+    cv2.putText(color_img_resize, str(frame)+" frame", (5, 500), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write frames on image
     cv2.imshow("OpenPose 1.7.0", color_img_resize)
     
     # check if the user wants to exit
@@ -101,7 +113,8 @@ def display(datums, fps, frame):
 # display keypoints on depth image and calculate and send the camera frame 3D points to a socket publisher
 def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
     global dv_previous
-
+    keypointOccluded = False
+    
     # get Body keypoints
     body_keypoints = datums.poseKeypoints
     
@@ -110,6 +123,7 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         wp_dict = {}
         dp_dict = {}
         dv_dict = {}
+        ko_count = 0
 
         # initialize variables
         color_point = [0, 0]
@@ -137,15 +151,22 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
 
                         # extract depth value from depth image
                         depth_value = depth_img[depth_point[1], depth_point[0]]
-                        
-                        # Check if the keypoint is occluded and if it is, mantain the previous depth value 
-                        if dv_previous and depth_value > 0 and depth_value < 3000:
-                            depth_value = checkOcclusion(i, dv_previous, depth_value)
 
+                        
+                        # Check if the keypoint is occluded
+                        if dv_previous and depth_value > 0 and depth_value < 3000:
+                            keypointOccluded = checkOcclusion(i, dv_previous, depth_value)
+
+                        # If keypoint is occluded, mantain the previous depth
+                        if keypointOccluded:
+                            if i in dv_previous:
+                                depth_value = dv_previous.get(i)
+                                ko_count += 1
+                        
                         # Add depth points and value to respective dictionaries
                         dp_dict[i] = depth_point
                         dv_dict[i] = depth_value
-
+                        
                         if display:
                             # Draw keypoint on depth image
                             cv2.drawMarker(depth_colormap, (depth_point[0], depth_point[1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
@@ -159,35 +180,40 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         # Save keypoints in a Json file
         # save3DKeypoints(wp_dict)
 
+        # if more than three keypoints are detcted as occluded, it may be that the user
+        # moved his whole body from one frame to another, so we reset the depth values dictionary 
+        if ko_count > 3:
+            dv_previous = {}
+        # Else, save the depth values for the next loop and send the pose
+        else:
+            dv_previous = dv_dict
+            
         # Send keypoints to another python script via socket (PUB/SUB)
-        ss.send(wp_dict)
+            ss.send(wp_dict)
 
         if display:
-            # Print keypoints with depth errors (0          -> keypoint not detcted anymore
-            #                                    high value -> background point detcted instead of keypoint)
-            # These keypoints were discarded
-            if dv_dict.keys() != wp_dict.keys():
-                set_dv = set(dv_dict.keys())
-                set_wp = set(wp_dict.keys())
-                missing_keypoints = set_dv - set_wp
-                missing_keypoints = list(missing_keypoints)
-                for i in missing_keypoints:
-                    print("Error detecting %s: depth value %i" % (body_mapping[i], dv_dict.get(i)))
-
-            # Save depth values for the next loop
-            dv_previous = dv_dict
+            # # Print keypoints with depth errors (0          -> keypoint not detected anymore
+            # #                                    high value -> background point detcted instead of keypoint)
+            # # These keypoints were discarded
+            # if dv_dict.keys() != wp_dict.keys():
+            #     set_dv = set(dv_dict.keys())
+            #     set_wp = set(wp_dict.keys())
+            #     missing_keypoints = set_dv - set_wp
+            #     missing_keypoints = list(missing_keypoints)
+            #     for i in missing_keypoints:
+            #         print("Error detecting %s: depth value %i" % (body_mapping[i], dv_dict.get(i)))
 
             # Write FPS on image
             cv2.putText(depth_colormap, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
             cv2.putText(depth_colormap, str(frame)+" frame", (5, 410), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) 
+
             # Show depth image with markers
             cv2.imshow('Depth image with keypoints', depth_colormap)
 
         # Show image for at least 1 ms and check if the user wants to exit
         key = cv2.waitKey(1)
         return (key == 27)
-        # else:
-        #     return False
+        
     except Exception as e:
         print(e)
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -283,6 +309,7 @@ try:
     # Initialize time counter
     t1 = time.perf_counter()
 
+    # Initialize frame counter
     frame = 0
 
     # Main loop

@@ -15,7 +15,7 @@ try:
     sr = SocketReceive()
 
     # Create matplotlib figure
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10,8))
     ax = fig.add_subplot(111, projection='3d')
 
     # to run GUI event loop
