@@ -21,8 +21,6 @@ try:
     # to run GUI event loop
     plt.ion()
     
-        
-
     print("Start receiving keypoints...")
     while True:
         # Receive keypoints from socket
@@ -55,7 +53,7 @@ try:
             
             # Set axes limits
             ax.set_xlim(-1,1)
-            ax.set_ylim(0,2)
+            ax.set_ylim(0.5,2)
             ax.set_zlim(-1,1)
 
             # Set point names

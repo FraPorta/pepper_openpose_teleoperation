@@ -22,7 +22,7 @@ from pykinect_lib.map_functions import *
 import pykinect_lib.utils_PyKinectV2 as utils
 from socket_send import SocketSend 
 
-# Result for BODY_25 (25 body parts consisting of COCO + foot)
+# BODY_25 model keypoints (25 body parts consisting of COCO + foot)
 #     {0,  "Nose"},
 #     {1,  "Neck"},
 #     {2,  "RShoulder"},
