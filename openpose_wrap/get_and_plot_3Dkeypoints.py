@@ -7,6 +7,7 @@ from socket_receive import SocketReceive
 
 import numpy as np
 
+
 try:
     # Init dictionary
     wp_dict = {}
