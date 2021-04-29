@@ -58,8 +58,8 @@ def obtain_LShoulderPitchRoll_angles(P1, P5, P6, P8):
     else:
         LShoulderPitch = theta_LSP_module
 
-    # print("Pitch:")
-    # print((LShoulderPitch * 180 )/ np.pi)
+    print("Pitch:")
+    print((LShoulderPitch * 180 )/ np.pi)
 
     # Formula for LShoulderRoll
     LShoulderRoll = (np.pi/2) - np.arccos((np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso)))
