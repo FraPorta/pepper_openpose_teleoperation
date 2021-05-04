@@ -16,7 +16,6 @@ class KeypointsToAngles:
                     '7':  "LWrist",
                     '8':  "MidHip"}
     
-    
 
     ## method __init__
     #
