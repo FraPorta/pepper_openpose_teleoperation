@@ -29,6 +29,10 @@ class SocketReceive:
             print(e)
             sys.exit(-1)
     
+    def __del__(self):
+        self.sock.close()
+        self.ctx.destroy()
+    
     ## method receive_keypoints
     #
     # start receiving 3D keypoints dict

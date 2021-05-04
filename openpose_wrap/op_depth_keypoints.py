@@ -266,7 +266,7 @@ try:
     # Change path to point to the models folder 
     #params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
     params["model_folder"] = home + '/openpose/models/'
-    params["net_resolution"] = "-1x304"         # select net resolution (necessary for low end graphic cards)
+    params["net_resolution"] = "-1x368"         # select net resolution (necessary for low end graphic cards)
     # params["camera"] = "-1"                     # automatically select camera input (-1)
     # params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
     params["number_people_max"] = "1"           # limit the number of recognized people to 1
@@ -332,7 +332,7 @@ try:
             # Instantiate OpenPose Datum object
             datum = op.Datum()
 
-            # Use kinect color image as InputData for OpenPose 
+            # Use Kinect color image as InputData for OpenPose 
             datum.cvInputData = color_img_bgr
 
             # Proceed if OpenPose processed the frame 
@@ -357,7 +357,6 @@ try:
 
                     # Display OpenPose output image
                     userWantsToExit = display(datum, fps, frame)
-
                     
             else:
                 break
