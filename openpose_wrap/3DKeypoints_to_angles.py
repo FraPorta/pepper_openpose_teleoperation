@@ -205,9 +205,9 @@ try:
         if all (body_part in wp_dict for body_part in LS):        
             LShoulderPitch, LShoulderRoll = obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
 
-            # # Print angles
-            # print("LShoulderPitch:")
-            # print((LShoulderPitch * 180 )/ np.pi)
+            # Print angles
+            print("LShoulderPitch:")
+            print((LShoulderPitch * 180 )/ np.pi)
 
             # print("LShoulderRoll:")
             # print((LShoulderRoll * 180)/ np.pi)

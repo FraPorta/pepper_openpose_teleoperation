@@ -15,6 +15,8 @@ class KeypointsToAngles:
                     '6':  "LElbow",
                     '7':  "LWrist",
                     '8':  "MidHip"}
+    
+    
 
     ## method __init__
     #
@@ -26,20 +28,22 @@ class KeypointsToAngles:
         # initialize socket for receiving the 3D keypoints
         self.sr = SocketReceive()
 
-        # Start loop to receive keypointsand calculate angles
-        self.start()
+        print("Start receiving keypoints...")
+
+        # # Start loop to receive keypointsand calculate angles
+        # self.start()
     
     ## method __del__
     #
     # delete class
     def __del__(self):
-        self.stop()
+        self.stop_receiving()
         del self.sr
 
-    ## method stop
+    ## method stop_receiving
     #
     # stop the receive keypoints loop
-    def stop(self):
+    def stop_receiving(self):
         self.start_flag = True
 
     ## function vector_from_points
@@ -54,16 +58,16 @@ class KeypointsToAngles:
     # Calculate left shoulder pitch and roll angles
     def obtain_LShoulderPitchRoll_angles(self, P1, P5, P6, P8):
         # Construct 3D vectors (bones) from points
-        v_1_5 = vector_from_points(P1, P5)
-        v_5_1 = vector_from_points(P5, P1)
-        v_6_5 = vector_from_points(P6, P5)
-        v_5_6 = vector_from_points(P5, P6)
+        v_1_5 = self.vector_from_points(P1, P5)
+        v_5_1 = self.vector_from_points(P5, P1)
+        v_6_5 = self.vector_from_points(P6, P5)
+        v_5_6 = self.vector_from_points(P5, P6)
 
         # # Calculate normal of the 1_5_6 plane
         # n_1_5_6 = np.cross(v_1_5, v_6_5)
 
         # Left torso Z axis
-        v_8_1 = vector_from_points(P8, P1)
+        v_8_1 = self.vector_from_points(P8, P1)
 
         # Left torso X axis 
         n_8_1_5 = np.cross(v_8_1, v_5_1)
@@ -94,11 +98,11 @@ class KeypointsToAngles:
     # Calculate left elbow yaw and roll angles
     def obtain_LElbowYawRoll_angle(self, P1, P5, P6, P7):
         # Construct 3D vectors (bones) from points
-        v_6_7 = vector_from_points(P6, P7)
-        v_1_5 = vector_from_points(P1, P5)
+        v_6_7 = self.vector_from_points(P6, P7)
+        v_1_5 = self.vector_from_points(P1, P5)
 
         # Left arm Z axis
-        v_6_5 = vector_from_points(P6, P5)
+        v_6_5 = self.vector_from_points(P6, P5)
         # Left arm X axis
         n_1_5_6 = np.cross(v_1_5, v_6_5)
         # Left arm Y axis
@@ -133,12 +137,12 @@ class KeypointsToAngles:
     # Calculate right shoulder pitch and roll angles
     def obtain_RShoulderPitchRoll_angle(self, P1, P2, P3, P8):
         # Construct 3D vectors (bones) from points
-        v_2_3 = vector_from_points(P2, P3)
-        v_1_2 = vector_from_points(P1, P2)
-        v_2_1 = vector_from_points(P2, P1)
+        v_2_3 = self.vector_from_points(P2, P3)
+        v_1_2 = self.vector_from_points(P1, P2)
+        v_2_1 = self.vector_from_points(P2, P1)
 
         # Right torso Z axis
-        v_8_1 = vector_from_points(P8, P1)
+        v_8_1 = self.vector_from_points(P8, P1)
         # Right torso X axis
         n_8_1_2 = np.cross(v_8_1, v_1_2)
         # Right torso Y axis
@@ -170,12 +174,12 @@ class KeypointsToAngles:
     # Calculate right elbow yaw and roll angles
     def obtain_RElbowYawRoll_angle(self, P1, P2, P3, P4):
         # Construct 3D vectors (bones) from points
-        v_3_4 = vector_from_points(P3, P4)
-        v_1_2 = vector_from_points(P1, P2)
-        v_2_3 = vector_from_points(P2, P3)
+        v_3_4 = self.vector_from_points(P3, P4)
+        v_1_2 = self.vector_from_points(P1, P2)
+        v_2_3 = self.vector_from_points(P2, P3)
 
         # Left arm Z axis
-        v_3_2 = vector_from_points(P3, P2)
+        v_3_2 = self.vector_from_points(P3, P2)
         # Left arm X axis
         n_1_2_3 = np.cross(v_3_2, v_1_2)
         # Left arm Y axis
@@ -207,10 +211,10 @@ class KeypointsToAngles:
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
 
-    def start(self):
+    def get_angles(self):
         try:
-            # Init dictionary
-            wp_dict = {}
+            # # Init dictionary
+            # wp_dict = {}
 
             # LShoulderPitch and LShoulderRoll needed keypoints
             LS = ['1','5','6','8']
@@ -224,57 +228,61 @@ class KeypointsToAngles:
             # RElbowYaw and RElbowRoll needed keypoints
             RE = ['1','2','3','4']   
 
-            print("Start receiving keypoints...")
+            # while self.start_flag:
 
-            while self.start_flag:
-                # Receive keypoints from socket
-                wp_dict = self.sr.receive_keypoints()
-                # print(wp_dict)
+            # Init angles
+            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = None
 
-                # LShoulder angles (Green arm on OpenPose)
-                if all (body_part in wp_dict for body_part in LS):        
-                    LShoulderPitch, LShoulderRoll = obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
+            # Receive keypoints from socket
+            wp_dict = self.sr.receive_keypoints()
+            # print(wp_dict)
 
-                    # # Print angles
-                    # print("LShoulderPitch:")
-                    # print((LShoulderPitch * 180 )/ np.pi)
+            # LShoulder angles (Green arm on OpenPose)
+            if all (body_part in wp_dict for body_part in LS):        
+                LShoulderPitch, LShoulderRoll = self.obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
 
-                    # print("LShoulderRoll:")
-                    # print((LShoulderRoll * 180)/ np.pi)
+                # # Print angles
+                # print("LShoulderPitch:")
+                # print((LShoulderPitch * 180 )/ np.pi)
 
-                # LElbow angles (Green arm on OpenPose)
-                if all (body_part in wp_dict for body_part in LE):
-                    LElbowYaw, LElbowRoll = obtain_LElbowYawRoll_angle(wp_dict.get(LE[0]), wp_dict.get(LE[1]), wp_dict.get(LE[2]), wp_dict.get(LE[3]))
+                # print("LShoulderRoll:")
+                # print((LShoulderRoll * 180)/ np.pi)
 
-                    # # Print angles
-                    # print("LElbowYaw:")
-                    # print((LElbowYaw * 180 )/ np.pi)
+            # LElbow angles (Green arm on OpenPose)
+            if all (body_part in wp_dict for body_part in LE):
+                LElbowYaw, LElbowRoll = self.obtain_LElbowYawRoll_angle(wp_dict.get(LE[0]), wp_dict.get(LE[1]), wp_dict.get(LE[2]), wp_dict.get(LE[3]))
 
-                    # print("LElbowRoll:")
-                    # print((LElbowRoll * 180)/ np.pi)
+                # # Print angles
+                # print("LElbowYaw:")
+                # print((LElbowYaw * 180 )/ np.pi)
 
-                # RShoulder angles
-                if all (body_part in wp_dict for body_part in RS):        
-                    RShoulderPitch, RShoulderRoll = obtain_RShoulderPitchRoll_angle(wp_dict.get(RS[0]), wp_dict.get(RS[1]), wp_dict.get(RS[2]), wp_dict.get(RS[3]))
+                # print("LElbowRoll:")
+                # print((LElbowRoll * 180)/ np.pi)
 
-                    # # Print angles
-                    # print("RShoulderPitch:")
-                    # print((RShoulderPitch * 180 )/ np.pi)
+            # RShoulder angles
+            if all (body_part in wp_dict for body_part in RS):        
+                RShoulderPitch, RShoulderRoll = self.obtain_RShoulderPitchRoll_angle(wp_dict.get(RS[0]), wp_dict.get(RS[1]), wp_dict.get(RS[2]), wp_dict.get(RS[3]))
 
-                    # print("RShoulderRoll:")
-                    # print((RShoulderRoll * 180)/ np.pi)
+                # # Print angles
+                # print("RShoulderPitch:")
+                # print((RShoulderPitch * 180 )/ np.pi)
+
+                # print("RShoulderRoll:")
+                # print((RShoulderRoll * 180)/ np.pi)
 
 
-                # # RElbow angles
-                if all (body_part in wp_dict for body_part in RE):
-                    RElbowYaw, RElbowRoll = obtain_RElbowYawRoll_angle(wp_dict.get(RE[0]), wp_dict.get(RE[1]), wp_dict.get(RE[2]), wp_dict.get(RE[3]))
-                    
-                    # # Print angles
-                    # print("RElbowYaw:")
-                    # print((RElbowYaw * 180 )/ np.pi)
+            # # RElbow angles
+            if all (body_part in wp_dict for body_part in RE):
+                RElbowYaw, RElbowRoll = self.obtain_RElbowYawRoll_angle(wp_dict.get(RE[0]), wp_dict.get(RE[1]), wp_dict.get(RE[2]), wp_dict.get(RE[3]))
+                
+                # # Print angles
+                # print("RElbowYaw:")
+                # print((RElbowYaw * 180 )/ np.pi)
 
-                    # print("RElbowRoll:")
-                    # print((RElbowRoll * 180)/ np.pi)
+                # print("RElbowRoll:")
+                # print((RElbowRoll * 180)/ np.pi)
+
+            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll
                 
                 
         except Exception as e:
