@@ -130,6 +130,7 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         
         # Reshape from 1D frame to 2D image
         depth_img = depth_frame.reshape(((depth_height, depth_width))).astype(np.uint16) 
+        
         if display:
             # Apply colormap to depth image
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_img, alpha=255/2000), cv2.COLORMAP_JET) # Scale to display from 0 mm to 2000 mm
@@ -273,8 +274,7 @@ try:
     # params["process_real_time"] = "true"
     params["net_resolution_dynamic"] = "0"      # recommended 1 for small GPUs (to avoid out of memory"" 
                                                 # errors but maximize speed) and 0 for big GPUs (for maximum accuracy and speed).");
-
-
+                                                
     # Add others in path?
     for i in range(0, len(args[1])):
         curr_item = args[1][i]
@@ -325,6 +325,9 @@ try:
 
             # Reshape input color image
             color_img = color_frame.reshape(((color_height, color_width, 4))).astype(np.uint8)
+           
+            # Flip images
+            # color_img = cv2.flip(color_img, 1)
             
             # Convert image to BGR to make it viable as OpenPose input
             color_img_bgr = cv2.cvtColor(color_img, cv2.COLOR_BGRA2BGR)

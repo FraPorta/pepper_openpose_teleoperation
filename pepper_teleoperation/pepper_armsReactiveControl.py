@@ -93,7 +93,6 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
 
     
 def main(session):
-# def main():
     """
     This example uses the setAngles and setStiffnesses methods
     in order to simulate reactive control.
@@ -114,14 +113,14 @@ def main(session):
     # create proxy on ALMemory
     memProxy = ALProxy("ALMemory","130.251.13.150",9559)
 
-    motion_service.setStiffnesses("LShoulderPitch", 1.0)
-    motion_service.setStiffnesses("LShoulderRoll", 1.0)
-    motion_service.setStiffnesses("LElbowYaw", 1.0)
-    motion_service.setStiffnesses("LElbowRoll", 1.0)
-    motion_service.setStiffnesses("RShoulderPitch", 1.0)
-    motion_service.setStiffnesses("RShoulderRoll", 1.0)
-    motion_service.setStiffnesses("RElbowYaw", 1.0)
-    motion_service.setStiffnesses("RElbowRoll", 1.0)
+    motion_service.setStiffnesses("LShoulderPitch", 0.2)
+    motion_service.setStiffnesses("LShoulderRoll", 0.2)
+    # motion_service.setStiffnesses("LElbowYaw", 1.0)
+    # motion_service.setStiffnesses("LElbowRoll", 1.0)
+    # motion_service.setStiffnesses("RShoulderPitch", 1.0)
+    # motion_service.setStiffnesses("RShoulderRoll", 1.0)
+    # motion_service.setStiffnesses("RElbowYaw", 1.0)
+    # motion_service.setStiffnesses("RElbowRoll", 1.0)
 
     # Wait some time
     time.sleep(2)
@@ -134,11 +133,12 @@ def main(session):
         try:
             # Get angles from keypoints
             LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll = KtA.get_angles()
+            # print(RElbowYaw)
 
             # Saturate angles to avoid exceding Pepper limits
             saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll)
 
-            # Print angles
+            ## Print angles ##
             # print("LShoulderPitch:")
             # # print((LShoulderPitch * 180 )/ np.pi)
             # print(float(LShoulderPitch))
@@ -146,24 +146,45 @@ def main(session):
             # # print((LShoulderRoll * 180)/ np.pi)
             # print(float(LShoulderRoll))
 
-            print("LElbowYaw:")
-            print((LElbowYaw * 180 )/ np.pi)
-            # print(float(LElbowYaw))
-            print("LElbowRoll:")
-            print((LElbowRoll * 180)/ np.pi)
-            # print(float(LElbowRoll))
+            # print("LElbowYaw:")
+            # print((LElbowYaw * 180 )/ np.pi)
+            # # print(float(LElbowYaw))
+            # print("LElbowRoll:")
+            # print((LElbowRoll * 180)/ np.pi)
+            # # print(float(LElbowRoll))
 
-            # Example simulating reactive control
-            # names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll"]
-            names = ["LElbowYaw", "LElbowRoll"]
-            angles = [float(LElbowYaw), float(LElbowRoll)]
+            ### Pepper joints control ###
+
+            ## Left arm ##
+            names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll"]
+            angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll)]
+
+            # # Left shoulder
+            # names = ["LShoulderPitch","LShoulderRoll"]
+            # angles = [float(LShoulderPitch),float(LShoulderRoll)]
+
+            # Left elbow
+            # names = ["LElbowYaw", "LElbowRoll"]
+            # angles = [float(LElbowYaw), float(LElbowRoll)]
+
+            ## Right arm ##
+            # names = ["RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll"]
+            # angles = [float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll)]
+
+            # Right shoulder
+            # names = ["RShoulderPitch","RShoulderRoll"]
+            # angles = [float(RShoulderPitch), float(RShoulderRoll)]
+
+            # Right elbow
+            # names = [ "RElbowYaw","RElbowRoll"]
+            # angles = [float(RElbowYaw), float(RElbowRoll)]
+
+            # Both shoulders
+            # names = ["LShoulderPitch","LShoulderRoll","RShoulderPitch","RShoulderRoll"]
+            # angles = [float(LShoulderPitch), float(LShoulderRoll), float(RShoulderPitch), float(RShoulderRoll)]
+            
             fractionMaxSpeed = 0.1
             motion_service.setAngles(names,angles,fractionMaxSpeed)
-
-            # wait
-            # time.sleep(0.2)
-
-            # motion_service.setStiffnesses("Head", 0.0)
 
         except Exception as e:
             print(e)
