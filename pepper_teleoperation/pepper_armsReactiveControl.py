@@ -4,10 +4,12 @@
 """Example: Use setAngles and setStiffnesses Methods"""
 
 import qi
+from naoqi import ALProxy
 import argparse
 import sys
 import time
 import numpy as np
+
 
 from keypoints_to_angles import KeypointsToAngles 
 
@@ -73,25 +75,25 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
     elif RSR > -0.0087:
         RShoulderRoll = -0.0087
         
-    # LElbowYaw saturation
+    # RElbowYaw saturation
     if REY is None:
         RElbowYaw = mProxy.getData("Device/SubDeviceList/RElbowYaw/Position/Actuator/Value")
-    if REY < -2.0857:
+    elif REY < -2.0857:
         RElbowYaw = -2.0857
     elif REY > 2.0857:
         RElbowYaw = 2.0857
 
-    # LElbowRoll saturation
+    # RElbowRoll saturation
     if RER is None:
         RElbowRoll = mProxy.getData("Device/SubDeviceList/RElbowRoll/Position/Actuator/Value")
-    if RER < 0.0087:
+    elif RER < 0.0087:
         RElbowRoll = 0.0087
     elif RER > 1.5620:
         RElbowRoll = 1.5620
 
     
-# def main(session):
-def main():
+def main(session):
+# def main():
     """
     This example uses the setAngles and setStiffnesses methods
     in order to simulate reactive control.
@@ -99,16 +101,30 @@ def main():
 
     global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll
 
-    # # Get the service ALMotion.
-    # motion_service  = session.service("ALMotion")
+    # Get the services ALMotion and ALRobotPosture
+    motion_service  = session.service("ALMotion")
+    posture_service = session.service("ALRobotPosture")
+
+    # Wake up robot
+    motion_service.wakeUp()
+
+    # Send robot to Stand Init
+    posture_service.goToPosture("StandInit", 0.5)
 
     # create proxy on ALMemory
-    memProxy = ALProxy("ALMemory","localhost",9559)
+    memProxy = ALProxy("ALMemory","130.251.13.150",9559)
 
-    #get data. Val can be int, float, list, string
-    # val = memProxy.getData("Device/SubDeviceList/LShoulderPitch/Position/Actuator/Value")
+    motion_service.setStiffnesses("LShoulderPitch", 1.0)
+    motion_service.setStiffnesses("LShoulderRoll", 1.0)
+    motion_service.setStiffnesses("LElbowYaw", 1.0)
+    motion_service.setStiffnesses("LElbowRoll", 1.0)
+    motion_service.setStiffnesses("RShoulderPitch", 1.0)
+    motion_service.setStiffnesses("RShoulderRoll", 1.0)
+    motion_service.setStiffnesses("RElbowYaw", 1.0)
+    motion_service.setStiffnesses("RElbowRoll", 1.0)
 
-    # motion_service.setStiffnesses("LShoulderPitch", 1.0)
+    # Wait some time
+    time.sleep(2)
     
     # Initialize class KeypointsToAngles
     KtA = KeypointsToAngles()
@@ -118,39 +134,35 @@ def main():
         try:
             # Get angles from keypoints
             LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll = KtA.get_angles()
-             
-            joint_angles = {'LShoulderPitch':LShoulderPitch,
-                            'LShoulderRoll':LShoulderRoll,
-                            'LElbowYaw':LElbowYaw,
-                            'LElbowRoll':LElbowRoll,
-                            'RShoulderPitch':RShoulderPitch,
-                            'RShoulderRoll':RShoulderRoll,
-                            'RElbowYaw':RElbowYaw,
-                            'RElbowRoll':RElbowRoll}
-            
-            # if LShoulderPitch is not None and LShoulderRoll is not None and LElbowYaw is not None and LElbowRoll is not None and \
-            #    RShoulderPitch is not None and RShoulderRoll is not None and RElbowYaw is not None and RElbowRoll is not None:
 
             # Saturate angles to avoid exceding Pepper limits
-            saturate_angles(memproxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll)
+            saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll)
 
             # Print angles
-            print("LShoulderPitch:")
-            print((LShoulderPitch * 180 )/ np.pi)
+            # print("LShoulderPitch:")
+            # # print((LShoulderPitch * 180 )/ np.pi)
+            # print(float(LShoulderPitch))
+            # print("LShoulderRoll:")
+            # # print((LShoulderRoll * 180)/ np.pi)
+            # print(float(LShoulderRoll))
 
-            print("LShoulderRoll:")
-            print((LShoulderRoll * 180)/ np.pi)
+            print("LElbowYaw:")
+            print((LElbowYaw * 180 )/ np.pi)
+            # print(float(LElbowYaw))
+            print("LElbowRoll:")
+            print((LElbowRoll * 180)/ np.pi)
+            # print(float(LElbowRoll))
 
-            # # Example simulating reactive control
-            # names = ["LShoulderPitch", "LShoulderRoll"]
-            # angles = [LShoulderPitch,LShoulderRoll]
-            # fractionMaxSpeed = 0.1
-            # motion_service.setAngles(names,angles,fractionMaxSpeed)
+            # Example simulating reactive control
+            # names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll"]
+            names = ["LElbowYaw", "LElbowRoll"]
+            angles = [float(LElbowYaw), float(LElbowRoll)]
+            fractionMaxSpeed = 0.1
+            motion_service.setAngles(names,angles,fractionMaxSpeed)
 
-            # wait half a second
-            # time.sleep(0.1)
+            # wait
+            # time.sleep(0.2)
 
-            # time.sleep(3.0)
             # motion_service.setStiffnesses("Head", 0.0)
 
         except Exception as e:
@@ -159,24 +171,25 @@ def main():
             print(exc_type, exc_tb.tb_lineno)
             # Restart loop
             KtA.stop_receiving()
-            main(session)
+            # main(session)
             # main()
+            sys.exit(-1)
             
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--ip", type=str, default="127.0.0.1",
-    #                     help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
-    # parser.add_argument("--port", type=int, default=9559,
-    #                     help="Naoqi port number")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ip", type=str, default="130.251.13.150",
+                        help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
+    parser.add_argument("--port", type=int, default=9559,
+                        help="Naoqi port number")
 
-    # args = parser.parse_args()
-    # session = qi.Session()
-    # try:
-    #     session.connect("tcp://" + args.ip + ":" + str(args.port))
-    # except RuntimeError:
-    #     print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
-    #            "Please check your script arguments. Run with -h option for help.")
-    #     sys.exit(1)
-    # main(session)
-    main()
+    args = parser.parse_args()
+    session = qi.Session()
+    try:
+        session.connect("tcp://" + args.ip + ":" + str(args.port))
+    except RuntimeError:
+        print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
+               "Please check your script arguments. Run with -h option for help.")
+        sys.exit(1)
+    main(session)
+    # main()

@@ -210,6 +210,25 @@ class KeypointsToAngles:
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
 
+    ## function invert_right_left
+    #
+    # Invert left and right arm
+    def invert_right_left(self, wp_dict):
+        temp_dict = wp_dict
+        if '2' in wp_dict:
+            temp_dict['5']=wp_dict['2']
+        if '3' in wp_dict:
+            temp_dict['6']=wp_dict['3']
+        if '4' in wp_dict:
+            temp_dict['7']=wp_dict['4']
+        if '5' in wp_dict:
+            temp_dict['2']=wp_dict['5']
+        if '6' in wp_dict:
+            temp_dict['3']=wp_dict['6']
+        if '7' in wp_dict:
+            temp_dict['4']=wp_dict['7']
+        return temp_dict
+
     def get_angles(self):
         try:
             # # Init dictionary
@@ -235,6 +254,8 @@ class KeypointsToAngles:
             # Receive keypoints from socket
             wp_dict = self.sr.receive_keypoints()
             # print(wp_dict)
+
+            wp_dict = self.invert_right_left(wp_dict)
 
             # LShoulder angles (Green arm on OpenPose)
             if all (body_part in wp_dict for body_part in LS):        

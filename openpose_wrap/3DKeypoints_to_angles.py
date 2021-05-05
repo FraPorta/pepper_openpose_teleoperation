@@ -176,6 +176,25 @@ def obtain_RElbowYawRoll_angle(P1, P2, P3, P4):
     # Return RElbow angles
     return RElbowYaw, RElbowRoll
 
+## function invert_right_left
+#
+# Invert left and right arm
+def invert_right_left(wp_dict):
+    temp_dict = wp_dict
+    if '2' in wp_dict:
+        temp_dict['5']=wp_dict['2']
+    if '3' in wp_dict:
+        temp_dict['6']=wp_dict['3']
+    if '4' in wp_dict:
+        temp_dict['7']=wp_dict['4']
+    if '5' in wp_dict:
+        temp_dict['2']=wp_dict['5']
+    if '6' in wp_dict:
+        temp_dict['3']=wp_dict['6']
+    if '7' in wp_dict:
+        temp_dict['4']=wp_dict['7']
+    return temp_dict
+
 try:
     # Init dictionary
     wp_dict = {}
@@ -200,14 +219,15 @@ try:
         # Receive keypoints from socket
         wp_dict = sr.receive_keypoints()
         # print(wp_dict)
+        wp_dict = invert_right_left(wp_dict)
 
         # LShoulder angles (Green arm on OpenPose)
         if all (body_part in wp_dict for body_part in LS):        
             LShoulderPitch, LShoulderRoll = obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
 
-            # Print angles
-            print("LShoulderPitch:")
-            print((LShoulderPitch * 180 )/ np.pi)
+            # # Print angles
+            # print("LShoulderPitch:")
+            # print((LShoulderPitch * 180 )/ np.pi)
 
             # print("LShoulderRoll:")
             # print((LShoulderRoll * 180)/ np.pi)
@@ -216,12 +236,14 @@ try:
         if all (body_part in wp_dict for body_part in LE):
             LElbowYaw, LElbowRoll = obtain_LElbowYawRoll_angle(wp_dict.get(LE[0]), wp_dict.get(LE[1]), wp_dict.get(LE[2]), wp_dict.get(LE[3]))
 
-            # # Print angles
-            # print("LElbowYaw:")
+            # Print angles
+            print("LElbowYaw:")
             # print((LElbowYaw * 180 )/ np.pi)
+            print(LElbowYaw)
 
-            # print("LElbowRoll:")
+            print("LElbowRoll:")
             # print((LElbowRoll * 180)/ np.pi)
+            print(LElbowRoll)
 
         # RShoulder angles
         if all (body_part in wp_dict for body_part in RS):        
