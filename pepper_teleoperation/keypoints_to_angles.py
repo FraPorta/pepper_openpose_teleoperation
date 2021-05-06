@@ -213,9 +213,9 @@ class KeypointsToAngles:
         intermediate_angle_2 = np.arccos(np.dot(v_3_4, R_right_arm) / (np.linalg.norm(v_3_4) * np.linalg.norm(R_right_arm)))
 
         # # Choice of the correct RElbowYaw angle using intermediate angles values
-        print("Module REY: %f" % theta_REY_module)
-        print("IntANg1: %f" % intermediate_angle_1)
-        print("IntANg2: %f" % intermediate_angle_2)
+        # print("Module REY: %f" % theta_REY_module)
+        # print("IntANg1: %f" % intermediate_angle_1)
+        # print("IntANg2: %f" % intermediate_angle_2)
 
         if intermediate_angle_1 <= np.pi/2:
             RElbowYaw = theta_REY_module
@@ -226,8 +226,8 @@ class KeypointsToAngles:
             elif intermediate_angle_2 <= np.pi/2:
                 RElbowYaw = theta_REY_module - (2 * np.pi)
             
-        print(RElbowYaw)
-        print(" ")
+        # print(RElbowYaw)
+        # print(" ")
 
         # Formula for RElbowRoll angle
         RElbowRoll = np.pi - np.arccos(np.dot(v_3_4, v_3_2) / (np.linalg.norm(v_3_4) * np.linalg.norm(v_3_2)))

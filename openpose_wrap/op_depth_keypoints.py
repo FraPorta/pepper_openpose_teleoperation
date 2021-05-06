@@ -99,10 +99,10 @@ def display(datums, fps, frame):
     #datum = datums[0]
     color_img = datums.cvOutputData
 
-    color_img_resize = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
-    cv2.putText(color_img_resize, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
-    cv2.putText(color_img_resize, str(frame)+" frame", (5, 500), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write frames on image
-    cv2.imshow("OpenPose 1.7.0", color_img_resize)
+    color_img = cv2.resize(color_img, (0,0), fx=0.65, fy=0.65) # Resize (1080, 1920, 4) into half (540, 960, 4)
+    cv2.putText(color_img, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
+    cv2.putText(color_img, str(frame)+" frame", (5, 500), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write frames on image
+    cv2.imshow("OpenPose 1.7.0", color_img)
     
     # check if the user wants to exit
     key = cv2.waitKey(1)
