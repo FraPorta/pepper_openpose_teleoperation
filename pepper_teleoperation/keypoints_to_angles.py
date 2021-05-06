@@ -74,7 +74,7 @@ class KeypointsToAngles:
 
         # Left torso Y axis
         # R_left_torso = np.cross(v_8_1, n_8_1_5)
-        R_left_torso = np.cross(n_8_1_5, v_8_1)
+        R_left_torso = np.cross(n_8_1_5, v_8_1) # Left-right arm inverted
 
         # Intermediate angle to calculate positive or negative final Pitch angle
         intermediate_angle = np.arccos(np.dot(v_5_6, v_8_1) / (np.linalg.norm(v_5_6))*(np.linalg.norm(v_8_1)))
@@ -90,7 +90,7 @@ class KeypointsToAngles:
     
         # Formula for LShoulderRoll
         # LShoulderRoll = (np.pi/2) - np.arccos((np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso)))
-        LShoulderRoll =  np.arccos((np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso))) - (np.pi/2) 
+        LShoulderRoll =  np.arccos((np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso))) - (np.pi/2) # Left-right arm inverted
 
         # Return LShoulder angles
         return LShoulderPitch, LShoulderRoll
@@ -109,7 +109,8 @@ class KeypointsToAngles:
         # Right torso X axis
         n_8_1_2 = np.cross(v_8_1, v_1_2)
         # Right torso Y axis
-        R_right_torso = np.cross(v_8_1, n_8_1_2)
+        # R_right_torso = np.cross(v_8_1, n_8_1_2) 
+        R_right_torso = np.cross(n_8_1_2,v_8_1) # Left-right arm inverted
 
         # # Normal to plane 1_2_3
         # n_1_2_3 = np.cross(v_2_3, v_2_1)
@@ -127,7 +128,8 @@ class KeypointsToAngles:
             RShoulderPitch = theta_RSP_module
 
         # Formula for RShoulderRoll
-        RShoulderRoll = (np.pi/2) - np.arccos((np.dot(v_2_3, R_right_torso)) / (np.linalg.norm(v_2_3) * np.linalg.norm(R_right_torso))) 
+        # RShoulderRoll =  (np.pi/2) - np.arccos((np.dot(v_2_3, R_right_torso)) / (np.linalg.norm(v_2_3) * np.linalg.norm(R_right_torso))) 
+        RShoulderRoll =  np.arccos((np.dot(v_2_3, R_right_torso)) / (np.linalg.norm(v_2_3) * np.linalg.norm(R_right_torso))) - (np.pi/2) # Left-right arm inverted
 
         # Return RShoulder angles
         return RShoulderPitch, RShoulderRoll
@@ -143,7 +145,8 @@ class KeypointsToAngles:
         # Left arm Z axis
         v_6_5 = self.vector_from_points(P6, P5)
         # Left arm X axis
-        n_1_5_6 = np.cross(v_1_5, v_6_5)
+        # n_1_5_6 = np.cross(v_6_5, v_1_5) 
+        n_1_5_6 = np.cross(v_1_5, v_6_5) # Right-Left arms inverted
         # Left arm Y axis
         R_left_arm = np.cross(v_6_5, n_1_5_6)
 
@@ -151,7 +154,7 @@ class KeypointsToAngles:
         n_5_6_7 = np.cross(v_6_5, v_6_7) 
 
         # Formula to calculate the module of LElbowYaw angle
-        theta_LEY_module = np.arccos(np.dot(n_1_5_6, n_5_6_7) / (np.linalg.norm(n_1_5_6) * np.linalg.norm(n_5_6_7))) - np.pi/4
+        theta_LEY_module = np.arccos(np.dot(n_1_5_6, n_5_6_7) / (np.linalg.norm(n_1_5_6) * np.linalg.norm(n_5_6_7))) 
 
         # Intermediate angles to choose the right LElbowYaw angle
         intermediate_angle_1 = np.arccos(np.dot(v_6_7, n_1_5_6) / (np.linalg.norm(v_6_7) * np.linalg.norm(n_1_5_6)))
@@ -187,12 +190,13 @@ class KeypointsToAngles:
         # Construct 3D vectors (bones) from points
         v_3_4 = self.vector_from_points(P3, P4)
         v_1_2 = self.vector_from_points(P1, P2)
-        v_2_3 = self.vector_from_points(P2, P3)
+        # v_2_3 = self.vector_from_points(P2, P3)
 
         # Left arm Z axis
         v_3_2 = self.vector_from_points(P3, P2)
         # Left arm X axis
-        n_1_2_3 = np.cross(v_3_2, v_1_2)
+        n_1_2_3 = np.cross(v_3_2, v_1_2)  # -- OUT --
+        # n_1_2_3 = np.cross(v_1_2, v_3_2)    # -- IN --  Right-left arms inverted
         # Left arm Y axis
         R_right_arm = np.cross(v_3_2, n_1_2_3)
 
@@ -209,21 +213,21 @@ class KeypointsToAngles:
         intermediate_angle_2 = np.arccos(np.dot(v_3_4, R_right_arm) / (np.linalg.norm(v_3_4) * np.linalg.norm(R_right_arm)))
 
         # # Choice of the correct RElbowYaw angle using intermediate angles values
-        # print("Module REY: %f" % theta_REY_module)
-        # print("IntANg1: %f" % intermediate_angle_1)
-        # print("IntANg2: %f" % intermediate_angle_2)
+        print("Module REY: %f" % theta_REY_module)
+        print("IntANg1: %f" % intermediate_angle_1)
+        print("IntANg2: %f" % intermediate_angle_2)
 
         if intermediate_angle_1 <= np.pi/2:
-            RElbowYaw = -theta_REY_module
+            RElbowYaw = theta_REY_module
         else:
             if intermediate_angle_2 > np.pi/2:
-                RElbowYaw = theta_REY_module
+                RElbowYaw = -theta_REY_module
 
             elif intermediate_angle_2 <= np.pi/2:
                 RElbowYaw = theta_REY_module - (2 * np.pi)
             
-        # print(RElbowYaw)
-        # print(" ")
+        print(RElbowYaw)
+        print(" ")
 
         # Formula for RElbowRoll angle
         RElbowRoll = np.pi - np.arccos(np.dot(v_3_4, v_3_2) / (np.linalg.norm(v_3_4) * np.linalg.norm(v_3_2)))
@@ -328,7 +332,7 @@ class KeypointsToAngles:
             if all (body_part in wp_dict for body_part in RE):
                 RElbowYaw, RElbowRoll = self.obtain_RElbowYawRoll_angle(wp_dict.get(RE[0]), wp_dict.get(RE[1]), wp_dict.get(RE[2]), wp_dict.get(RE[3]))
                 
-                # # Print angles
+                # Print angles
                 # print("RElbowYaw:")
                 # print((RElbowYaw * 180 )/ np.pi)
 

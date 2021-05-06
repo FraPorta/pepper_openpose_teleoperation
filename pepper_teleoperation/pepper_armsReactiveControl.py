@@ -115,12 +115,15 @@ def main(session):
 
     motion_service.setStiffnesses("LShoulderPitch", 0.2)
     motion_service.setStiffnesses("LShoulderRoll", 0.2)
-    # motion_service.setStiffnesses("LElbowYaw", 1.0)
-    # motion_service.setStiffnesses("LElbowRoll", 1.0)
-    # motion_service.setStiffnesses("RShoulderPitch", 1.0)
-    # motion_service.setStiffnesses("RShoulderRoll", 1.0)
-    # motion_service.setStiffnesses("RElbowYaw", 1.0)
-    # motion_service.setStiffnesses("RElbowRoll", 1.0)
+
+    motion_service.setStiffnesses("LElbowYaw", 0.2)
+    motion_service.setStiffnesses("LElbowRoll", 0.2)
+
+    motion_service.setStiffnesses("RShoulderPitch", 0.2)
+    motion_service.setStiffnesses("RShoulderRoll", 0.2)
+
+    motion_service.setStiffnesses("RElbowYaw", 0.2)
+    motion_service.setStiffnesses("RElbowRoll", 0.2)
 
     # Wait some time
     time.sleep(2)
@@ -156,8 +159,8 @@ def main(session):
             ### Pepper joints control ###
 
             ## Left arm ##
-            names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll"]
-            angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll)]
+            # names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll"]
+            # angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll)]
 
             # # Left shoulder
             # names = ["LShoulderPitch","LShoulderRoll"]
@@ -175,13 +178,19 @@ def main(session):
             # names = ["RShoulderPitch","RShoulderRoll"]
             # angles = [float(RShoulderPitch), float(RShoulderRoll)]
 
-            # Right elbow
+            # # Right elbow
             # names = [ "RElbowYaw","RElbowRoll"]
             # angles = [float(RElbowYaw), float(RElbowRoll)]
 
             # Both shoulders
             # names = ["LShoulderPitch","LShoulderRoll","RShoulderPitch","RShoulderRoll"]
             # angles = [float(LShoulderPitch), float(LShoulderRoll), float(RShoulderPitch), float(RShoulderRoll)]
+
+            # Both arms
+            names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
+                     "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll"]
+            angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll), \
+                      float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll)]
             
             fractionMaxSpeed = 0.1
             motion_service.setAngles(names,angles,fractionMaxSpeed)
