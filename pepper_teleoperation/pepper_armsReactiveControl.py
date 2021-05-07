@@ -20,15 +20,15 @@ session = None
 ## function saturate_angles
 #
 # Saturate angles before using them for controlling Pepper joints
-def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
-    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll
+def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
+    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
 
     ## LEFT ##
     
     # LShoulderPitch saturation
     if LSP is None:
         LShoulderPitch = mProxy.getData("Device/SubDeviceList/LShoulderPitch/Position/Actuator/Value")
-        print("LSP")
+        # print("LSP")
     elif LSP < -2.0857:
         LShoulderPitch = -2.0857
     elif LSP > 2.0857:
@@ -37,7 +37,7 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
     # LShoulderRoll saturation
     if LSR is None:
         LShoulderRoll = mProxy.getData("Device/SubDeviceList/LShoulderRoll/Position/Actuator/Value")
-        print("LSR")
+        # print("LSR")
     elif LSR < 0.0087:
         LShoulderRoll = 0.0087
     elif LSR > 1.5620:
@@ -46,7 +46,7 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
     # LElbowYaw saturation
     if LEY is None:
         LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Actuator/Value")
-        print("LEY")
+        # print("LEY")
     elif LEY < -2.0857:
         LElbowYaw = -2.0857
     elif LEY > 2.0857:
@@ -55,7 +55,7 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
     # LElbowRoll saturation
     if LER is None:
         LElbowRoll = mProxy.getData("Device/SubDeviceList/LElbowRoll/Position/Actuator/Value")
-        print("LER")
+        # print("LER")
     elif LER < -1.5620:
         LElbowRoll = -1.5620
     elif LER > -0.0087:
@@ -67,7 +67,7 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
     # RShoulderPitch saturation
     if RSP is None:
         RShoulderPitch = mProxy.getData("Device/SubDeviceList/RShoulderPitch/Position/Actuator/Value")
-        print("RSP")
+        # print("RSP")
     elif RSP < -2.0857:
         RShoulderPitch = -2.0857
     elif RSP > 2.0857:
@@ -76,7 +76,7 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
     # RShoulderRoll saturation
     if RSR is None:
         RShoulderRoll = mProxy.getData("Device/SubDeviceList/RShoulderRoll/Position/Actuator/Value")
-        print("RSR")
+        # print("RSR")
     elif RSR < -1.5620 :
         RShoulderRoll = -1.5620
     elif RSR > -0.0087:
@@ -85,7 +85,7 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
     # RElbowYaw saturation
     if REY is None:
         RElbowYaw = mProxy.getData("Device/SubDeviceList/RElbowYaw/Position/Actuator/Value")
-        print("REY")
+        # print("REY")
     elif REY < -2.0857:
         RElbowYaw = -2.0857
     elif REY > 2.0857:
@@ -94,11 +94,21 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER):
     # RElbowRoll saturation
     if RER is None:
         RElbowRoll = mProxy.getData("Device/SubDeviceList/RElbowRoll/Position/Actuator/Value")
-        print("RER")
+        # print("RER")
     elif RER < 0.0087:
         RElbowRoll = 0.0087
     elif RER > 1.5620:
         RElbowRoll = 1.5620
+
+    # HipPitch saturation: -1.0385 to 1.0385
+    if HP is None:
+        HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Actuator/Value")
+        # print("RER")
+    elif HP < -1.0385:
+        HipPitch = -1.0385
+    elif HP > 1.0385:
+        HipPitch = 1.0385
+
     
 def update_arr(arr, angle, window_length):
     # Temporary array to save data
@@ -120,7 +130,7 @@ def main(session):
     in order to simulate reactive control.
     """
 
-    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll
+    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
 
     # Get the services ALMotion and ALRobotPosture
     motion_service  = session.service("ALMotion")
@@ -149,6 +159,8 @@ def main(session):
     motion_service.setStiffnesses("RElbowYaw", stiffness)
     motion_service.setStiffnesses("RElbowRoll", stiffness)
 
+    motion_service.setStiffnesses("HipPitch", stiffness)
+
     # Wait some time
     time.sleep(2)
     
@@ -159,8 +171,8 @@ def main(session):
     # counter = 0
 
     # Filter parameter
-    window_length = 3
-    polyorder = 2
+    window_length = 7
+    polyorder = 3
 
     # Initialize array to store angles for filtering
     LSP_arr = np.zeros(window_length + 1)
@@ -179,30 +191,27 @@ def main(session):
     # Start loop to receive angles and control Pepper joints
     while KtA.start_flag:
         try:
-            # Update counter
-            # counter += 1
-
             # Init array with names to control Pepper joints
             names = []
             angles = []
 
             # Get angles from keypoints
-            LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll = KtA.get_angles()
+            LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch = KtA.get_angles()
 
             # Saturate angles to avoid exceding Pepper limits
-            saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll)
+            saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch)
             
             ### DATA REAL-TIME FILTERING ###
             # Update arrays 1
-            LSP_arr = update_arr(LSP_arr, LShoulderPitch, window_length)
-            LSR_arr = update_arr(LSR_arr, LShoulderRoll, window_length)
-            LEY_arr = update_arr(LEY_arr, LElbowYaw, window_length)
-            LER_arr = update_arr(LER_arr, LElbowRoll, window_length)
+            # LSP_arr = update_arr(LSP_arr, LShoulderPitch, window_length)
+            # LSR_arr = update_arr(LSR_arr, LShoulderRoll, window_length)
+            # LEY_arr = update_arr(LEY_arr, LElbowYaw, window_length)
+            # LER_arr = update_arr(LER_arr, LElbowRoll, window_length)
 
-            RSP_arr = update_arr(RSP_arr, RShoulderPitch, window_length)
-            RSR_arr = update_arr(RSR_arr, RShoulderRoll, window_length)
-            REY_arr = update_arr(REY_arr, RElbowYaw, window_length)
-            RER_arr = update_arr(RER_arr, RElbowRoll, window_length)
+            # RSP_arr = update_arr(RSP_arr, RShoulderPitch, window_length)
+            # RSR_arr = update_arr(RSR_arr, RShoulderRoll, window_length)
+            # REY_arr = update_arr(REY_arr, RElbowYaw, window_length)
+            # RER_arr = update_arr(RER_arr, RElbowRoll, window_length)
 
             # # Update arrays 2
             # LSP_arr_filt = update_arr(LSP_arr, LShoulderPitch, window_length)
@@ -217,15 +226,15 @@ def main(session):
 
             # Filter angles using a Savitzky-Golay filter
             # Left arm
-            LSP_arr = savgol_filter(LSP_arr, window_length, polyorder)
-            LSR_arr = savgol_filter(LSR_arr, window_length, polyorder)
-            LEY_arr = savgol_filter(LEY_arr, window_length, polyorder)
-            LER_arr = savgol_filter(LER_arr, window_length, polyorder)
-            # Right arm
-            RSP_arr = savgol_filter(RSP_arr, window_length, polyorder)
-            RSR_arr = savgol_filter(RSR_arr, window_length, polyorder)
-            REY_arr = savgol_filter(REY_arr, window_length, polyorder)
-            RER_arr = savgol_filter(RER_arr, window_length, polyorder)
+            # LSP_arr = savgol_filter(LSP_arr, window_length, polyorder)
+            # LSR_arr = savgol_filter(LSR_arr, window_length, polyorder)
+            # LEY_arr = savgol_filter(LEY_arr, window_length, polyorder)
+            # LER_arr = savgol_filter(LER_arr, window_length, polyorder)
+            # # Right arm
+            # RSP_arr = savgol_filter(RSP_arr, window_length, polyorder)
+            # RSR_arr = savgol_filter(RSR_arr, window_length, polyorder)
+            # REY_arr = savgol_filter(REY_arr, window_length, polyorder)
+            # RER_arr = savgol_filter(RER_arr, window_length, polyorder)
             
             # # Filter angles using a Savitzky-Golay filter
             # # Left arm
@@ -240,15 +249,15 @@ def main(session):
             # RER_arr_filt = savgol_filter(RER_arr_filt, window_length, polyorder)
 
             # Extract the filtered angle
-            LShoulderPitch = LSP_arr[window_length]
-            LShoulderRoll = LSR_arr[window_length]
-            LElbowYaw = LEY_arr[window_length]
-            LElbowRoll = LER_arr[window_length]
+            # LShoulderPitch = LSP_arr[window_length]
+            # LShoulderRoll = LSR_arr[window_length]
+            # LElbowYaw = LEY_arr[window_length]
+            # LElbowRoll = LER_arr[window_length]
 
-            RShoulderPitch = RSP_arr[window_length]
-            RShoulderRoll = RSR_arr[window_length]
-            RElbowYaw = REY_arr[window_length]
-            RElbowRoll = RER_arr[window_length]
+            # RShoulderPitch = RSP_arr[window_length]
+            # RShoulderRoll = RSR_arr[window_length]
+            # RElbowYaw = REY_arr[window_length]
+            # RElbowRoll = RER_arr[window_length]
 
             # # Extract the filtered angle
             # LShoulderPitch = LSP_arr_filt[window_length]
@@ -261,12 +270,72 @@ def main(session):
             # RElbowYaw = REY_arr_filt[window_length]
             # RElbowRoll = RER_arr_filt[window_length]
 
-            # # Saturate angles to avoid exceding Pepper limits
-            # saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll)
+            ### Pepper joints control ###
+            # Both shoulders
+            names_shoulders = ["LShoulderPitch","LShoulderRoll","RShoulderPitch","RShoulderRoll"]
+            angles_shoulders = [float(LShoulderPitch), float(LShoulderRoll), float(RShoulderPitch), float(RShoulderRoll)]
 
+            # Both elbows
+            names_elbows = ["LElbowYaw", "LElbowRoll","RElbowYaw","RElbowRoll"]
+            angles_elbows = [float(LElbowYaw), float(LElbowRoll), float(RElbowYaw), float(RElbowRoll)]
+
+            # HipPitch
+            names_hip = ["HipPitch"]
+            angles_hip = [float(HipPitch)]
+
+            # Both arms 
+            names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
+                     "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll"]
+            angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll), \
+                      float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll)]
+            
+            # Speed limits for the joints
+            fractionMaxSpeed = 0.15
+
+            fractionMaxSpeed_shoulders = 0.175
+            fractionMaxSpeed_elbows = 0.175
+            fractionMaxSpeed_hip = 0.125
+
+            # if names and angles:
+            #     motion_service.setAngles(names, angles, fractionMaxSpeed)
+            #     motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
+
+            if names_shoulders and angles_shoulders and names_elbows and angles_elbows:
+                
+                motion_service.setAngles(names_shoulders, angles_shoulders, fractionMaxSpeed_shoulders)
+                motion_service.setAngles(names_elbows, angles_elbows, fractionMaxSpeed_elbows)
+                motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
+
+        except Exception as e:
+            print(e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            print(exc_type, exc_tb.tb_lineno)
+            # Restart loop
+            KtA.stop_receiving()
+            main(session)
+            sys.exit(-1)
             
 
-            # Control the angle only if the difference from the last control angle is greater than thresh
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ip", type=str, default="130.251.13.150",
+                        help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
+    parser.add_argument("--port", type=int, default=9559,
+                        help="Naoqi port number")
+
+    args = parser.parse_args()
+    session = qi.Session()
+    try:
+        session.connect("tcp://" + args.ip + ":" + str(args.port))
+    except RuntimeError:
+        print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
+               "Please check your script arguments. Run with -h option for help.")
+        sys.exit(1)
+    main(session)
+
+
+'''
+# Control the angle only if the difference from the last control angle is greater than thresh
             # Left arm
             # if np.linalg.norm( LSP_arr[window_length] - LSP_arr[window_length-1] ) > thresh :  
             #     names.append("LShoulderPitch")
@@ -301,11 +370,7 @@ def main(session):
             #     names.append("RElbowRoll")
             #     angles.append(float(RElbowRoll))
 
-            # print(names)
-            # print(angles)
-
-            ### Pepper joints control ###
-            ## Left arm ##
+        ## Left arm ##
             # names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll"]
             # angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll)]
 
@@ -329,43 +394,4 @@ def main(session):
             # names = [ "RElbowYaw","RElbowRoll"]
             # angles = [float(RElbowYaw), float(RElbowRoll)]
 
-            # Both shoulders
-            # names = ["LShoulderPitch","LShoulderRoll","RShoulderPitch","RShoulderRoll"]
-            # angles = [float(LShoulderPitch), float(LShoulderRoll), float(RShoulderPitch), float(RShoulderRoll)]
-
-            # Both arms
-            names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
-                     "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll"]
-            angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll), \
-                      float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll)]
-            
-            fractionMaxSpeed = 0.2
-            if names and angles:
-                motion_service.setAngles(names, angles, fractionMaxSpeed)
-
-        except Exception as e:
-            print(e)
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            print(exc_type, exc_tb.tb_lineno)
-            # Restart loop
-            KtA.stop_receiving()
-            # main(session)
-            sys.exit(-1)
-            
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.150",
-                        help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
-    parser.add_argument("--port", type=int, default=9559,
-                        help="Naoqi port number")
-
-    args = parser.parse_args()
-    session = qi.Session()
-    try:
-        session.connect("tcp://" + args.ip + ":" + str(args.port))
-    except RuntimeError:
-        print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
-               "Please check your script arguments. Run with -h option for help.")
-        sys.exit(1)
-    main(session)
+'''

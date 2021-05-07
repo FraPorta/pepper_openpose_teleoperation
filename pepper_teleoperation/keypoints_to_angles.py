@@ -24,6 +24,9 @@ class KeypointsToAngles:
         # init start flag
         self.start_flag = True
 
+        # Init array for hip pitch-roll 
+        self.prev_wp_dict = {}
+
         # initialize socket for receiving the 3D keypoints
         self.sr = SocketReceive()
 
@@ -235,6 +238,45 @@ class KeypointsToAngles:
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
 
+    def obtain_HipPitch_angles(self, P0_curr, P8_curr, P0_prev, P8_prev):
+        # Calculate vector
+        v_0_8_prev = self.vector_from_points(P0_prev, P8_prev)
+        v_0_8_curr = self.vector_from_points(P0_curr, P8_curr)
+
+        # Normal to Y-Z plane
+        n_YZ = [1, 0, 0]
+        n_XZ = [0, 1, 0]
+        n_XY = [0, 0, 1]
+
+        # Project vectors on YZ plane
+        v_0_8_prev_proj = v_0_8_prev - np.dot(v_0_8_prev, n_YZ)
+        v_0_8_curr_proj = v_0_8_curr - np.dot(v_0_8_curr, n_YZ)
+
+        # Calculate HipPitch module
+        # omega_HP_module = np.arccos((np.dot(v_0_8_prev_proj, v_0_8_curr_proj))/(np.linalg.norm(v_0_8_prev_proj) * np.linalg.norm(v_0_8_curr_proj)))
+        omega_HP_module = np.arccos((np.dot(n_XZ, v_0_8_curr_proj))/(np.linalg.norm(n_XZ) * np.linalg.norm(v_0_8_curr_proj)))
+
+        # Intermediate vector and angle to calculate positive or negative pich
+        # n_hp = np.cross(n_YZ, v_0_8_prev_proj)
+        intermediate_angle = np.arccos(np.dot(v_0_8_curr_proj, n_XY) / (np.linalg.norm(v_0_8_curr_proj) * np.linalg.norm(n_XY)))
+
+        # print("Module")
+        # print(omega_HP_module * 180 / np.pi)
+        # print("Intermediate")
+        # print(intermediate_angle * 180 / np.pi)
+
+
+        if intermediate_angle > np.pi/2:
+            HipPitch = np.pi - omega_HP_module 
+        else:
+            HipPitch = omega_HP_module - np.pi
+            
+        
+        # print(HipPitch * 180 / np.pi)
+        
+        return HipPitch
+
+
     ## function invert_right_left
     #
     # Invert left and right arm
@@ -283,16 +325,23 @@ class KeypointsToAngles:
             # RElbowYaw and RElbowRoll needed keypoints
             RE = ['1','2','3','4']   
 
+            # HipPitch needed keypoints
+            HP = ['0', '8']
+
             # while self.start_flag:
 
             # Init angles
-            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = None
+            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
 
             # Receive keypoints from socket
             wp_dict = self.sr.receive_keypoints()
-            # print(wp_dict)
 
+            # Invert right arm with left arm
             wp_dict = self.invert_right_left(wp_dict) 
+
+            # LShoulder angles (Green arm on OpenPose)
+            if all (body_part in wp_dict for body_part in HP) and all (body_part in self.prev_wp_dict for body_part in HP):
+                HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]), self.prev_wp_dict.get(HP[0]), self.prev_wp_dict.get(HP[1]))
 
             # LShoulder angles (Green arm on OpenPose)
             if all (body_part in wp_dict for body_part in LS):        
@@ -338,8 +387,11 @@ class KeypointsToAngles:
 
                 # print("RElbowRoll:")
                 # print((RElbowRoll * 180)/ np.pi)
+            
+            # Save dictionary for next loop
+            self.prev_wp_dict = wp_dict.copy()
 
-            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll
+            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
                 
                 
         except Exception as e:
