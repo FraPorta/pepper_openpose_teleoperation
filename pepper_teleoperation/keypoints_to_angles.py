@@ -24,9 +24,6 @@ class KeypointsToAngles:
         # init start flag
         self.start_flag = True
 
-        # Init array for hip pitch-roll 
-        self.prev_wp_dict = {}
-
         # initialize socket for receiving the 3D keypoints
         self.sr = SocketReceive()
 
@@ -229,18 +226,14 @@ class KeypointsToAngles:
             elif intermediate_angle_2 <= np.pi/2:
                 RElbowYaw = theta_REY_module - (2 * np.pi)
             
-        # print(RElbowYaw)
-        # print(" ")
-
         # Formula for RElbowRoll angle
         RElbowRoll = np.pi - np.arccos(np.dot(v_3_4, v_3_2) / (np.linalg.norm(v_3_4) * np.linalg.norm(v_3_2)))
 
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
 
-    def obtain_HipPitch_angles(self, P0_curr, P8_curr, P0_prev, P8_prev):
+    def obtain_HipPitch_angles(self, P0_curr, P8_curr):
         # Calculate vector
-        v_0_8_prev = self.vector_from_points(P0_prev, P8_prev)
         v_0_8_curr = self.vector_from_points(P0_curr, P8_curr)
 
         # Normal to Y-Z plane
@@ -249,7 +242,6 @@ class KeypointsToAngles:
         n_XY = [0, 0, 1]
 
         # Project vectors on YZ plane
-        v_0_8_prev_proj = v_0_8_prev - np.dot(v_0_8_prev, n_YZ)
         v_0_8_curr_proj = v_0_8_curr - np.dot(v_0_8_curr, n_YZ)
 
         # Calculate HipPitch module
@@ -257,22 +249,13 @@ class KeypointsToAngles:
         omega_HP_module = np.arccos((np.dot(n_XZ, v_0_8_curr_proj))/(np.linalg.norm(n_XZ) * np.linalg.norm(v_0_8_curr_proj)))
 
         # Intermediate vector and angle to calculate positive or negative pich
-        # n_hp = np.cross(n_YZ, v_0_8_prev_proj)
         intermediate_angle = np.arccos(np.dot(v_0_8_curr_proj, n_XY) / (np.linalg.norm(v_0_8_curr_proj) * np.linalg.norm(n_XY)))
 
-        # print("Module")
-        # print(omega_HP_module * 180 / np.pi)
-        # print("Intermediate")
-        # print(intermediate_angle * 180 / np.pi)
-
-
+        # Choose positive or negative pitch angle
         if intermediate_angle > np.pi/2:
             HipPitch = np.pi - omega_HP_module 
         else:
             HipPitch = omega_HP_module - np.pi
-            
-        
-        # print(HipPitch * 180 / np.pi)
         
         return HipPitch
 
@@ -341,7 +324,7 @@ class KeypointsToAngles:
 
             # LShoulder angles (Green arm on OpenPose)
             if all (body_part in wp_dict for body_part in HP) and all (body_part in self.prev_wp_dict for body_part in HP):
-                HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]), self.prev_wp_dict.get(HP[0]), self.prev_wp_dict.get(HP[1]))
+                HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]))
 
             # LShoulder angles (Green arm on OpenPose)
             if all (body_part in wp_dict for body_part in LS):        
@@ -388,9 +371,6 @@ class KeypointsToAngles:
                 # print("RElbowRoll:")
                 # print((RElbowRoll * 180)/ np.pi)
             
-            # Save dictionary for next loop
-            self.prev_wp_dict = wp_dict.copy()
-
             return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
                 
                 
