@@ -110,16 +110,6 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
     elif HP > 1.0385:
         HipPitch = 1.0385
 
-def butter_lowpass_filter(data, cutoff, fs, order):
-    N_samples = len(data)
-    sampling_rate = N_samples/time_elapsed
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    # Get the filter coefficients 
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    y = filtfilt(b, a, data)
-    return y
-
     
 def update_arr(arr, angle, window_length):
 
@@ -135,6 +125,7 @@ def update_arr(arr, angle, window_length):
     arr = temp.copy()
 
     return arr
+
 
     
 def main(session):
@@ -180,33 +171,50 @@ def main(session):
     # Initialize class KeypointsToAngles
     KtA = KeypointsToAngles()
 
-    # Counter for saving values for the filter
-    # counter = 0
+    # Filter parameters 
+    ## MOLTO BUONI
+    # fs = 5.3        # sample rate, Hz
+    # cutoff = 1.0    # desired cutoff frequency of the filter, Hz , slightly higher than actual 0.05, 0.1 Hz
+    # nyq = 0.5 * fs  # Nyquist Frequency
+    # order = 2       # filter order
 
-    # Filter parameters (butter_lowpass_filter(data, cutoff, fs, order):)
-    # window_length = 9
-    fs = 5.5          # sample rate, Hz
-    cutoff = 0.2    # desired cutoff frequency of the filter, Hz , slightly higher than actual 0.05, 0.1 Hz
+    fs = 5.3        # sample rate, Hz
+    cutoff = 0.8   # desired cutoff frequency of the filter, Hz , slightly higher than actual 0.5 Hz
     nyq = 0.5 * fs  # Nyquist Frequency
-    order = 2       # sin wave can be approx represented as quadratic  
+    order = 1      # filter order
+    normal_cutoff = cutoff / nyq # Cutoff freq for lowpass filter
 
-    a, b = scipy.signal.butter(N, Wn, btype='low', analog=False, output='ba', fs=None) # DA MODIFICARE
+    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False, output='ba') 
 
-    b = signal.firwin(order + 1, cutoff)
-    z_LSP = signal.lfilter_zi(b, 1)   
-    z_LSR = signal.lfilter_zi(b, 1)   
-    z_LEY = signal.lfilter_zi(b, 1)   
-    z_LER = signal.lfilter_zi(b, 1)  
+    # # Plot the frequency response.
+    # w, h = signal.freqz(b, a)
+    # plt.subplot(2, 1, 1)
+    # plt.plot(0.5*fs*w/np.pi, np.abs(h), 'b')
+    # plt.plot(cutoff, 0.5*np.sqrt(2), 'ko')
+    # plt.axvline(cutoff, color='k')
+    # plt.xlim(0, 0.5*fs)
+    # plt.title("Lowpass Filter Frequency Response")
+    # plt.xlabel('Frequency [Hz]')
+    # plt.grid()
+    # plt.show()
 
-    z_RSP = signal.lfilter_zi(b, 1)   
-    z_RSR = signal.lfilter_zi(b, 1)   
-    z_REY = signal.lfilter_zi(b, 1)   
-    z_RER = signal.lfilter_zi(b, 1)   
+    # b = signal.firwin(order + 1, cutoff)
+
+    z_LSP = signal.lfilter_zi(b, a)   
+    z_LSR = signal.lfilter_zi(b, a)   
+    z_LEY = signal.lfilter_zi(b, a)   
+    z_LER = signal.lfilter_zi(b, a)  
+
+    z_RSP = signal.lfilter_zi(b, a)   
+    z_RSR = signal.lfilter_zi(b, a)   
+    z_REY = signal.lfilter_zi(b, a)   
+    z_RER = signal.lfilter_zi(b, a)   
     
-    z_HP = signal.lfilter_zi(b, 1)   
+    z_HP = signal.lfilter_zi(b, a)   
 
     # Initialize array to store angles for filtering
     LSP_arr = []
+    LSP_arr_filt = []
     # LSR_arr = np.zeros(window_length + 1)
     # LEY_arr = np.zeros(window_length + 1)
     # LER_arr = np.zeros(window_length + 1)
@@ -219,8 +227,12 @@ def main(session):
     # Threshold to control or not a joint
     thresh = 0
 
+    # COunter
+    count = 1
+
     # Initialize time counter
     t1 = time.time()
+    time_elapsed = 0.0
 
     # Start loop to receive angles and control Pepper joints
     while KtA.start_flag:
@@ -237,7 +249,7 @@ def main(session):
             
             ### DATA REAL-TIME FILTERING ###
             # Update arrays 1
-            LSP_arr.append(LShoulderPitch)
+            LSP_arr.append(LShoulderRoll)
             # LSP_arr = update_arr(LSP_arr, LShoulderPitch, window_length)
             # LSR_arr = update_arr(LSR_arr, LShoulderRoll, window_length)
             # LEY_arr = update_arr(LEY_arr, LElbowYaw, window_length)
@@ -248,32 +260,21 @@ def main(session):
             # REY_arr = update_arr(REY_arr, RElbowYaw, window_length)
             # RER_arr = update_arr(RER_arr, RElbowRoll, window_length)
 
-            # Filter data with
-            LShoulderPitch, z_LSP = signal.lfilter(b, 1, [LShoulderPitch], zi=z_LSP)
-            LShoulderRoll, z_LSR = signal.lfilter(b, 1, [LShoulderRoll], zi=z_LSR)
-            LElbowYaw, z_LEY = signal.lfilter(b, 1, [LElbowYaw], zi=z_LEY)
-            LElbowRoll, z_LER = signal.lfilter(b, 1, [LElbowRoll], zi=z_LER)
+            # Filter data with Butterworth filter
+            LShoulderPitch, z_LSP = signal.lfilter(b, a, [LShoulderPitch], zi=z_LSP )
+            LShoulderRoll, z_LSR = signal.lfilter(b, a, [LShoulderRoll], zi=z_LSR)
+            LElbowYaw, z_LEY = signal.lfilter(b, a, [LElbowYaw], zi=z_LEY)
+            LElbowRoll, z_LER = signal.lfilter(b, a, [LElbowRoll], zi=z_LER)
 
-            RShoulderPitch, z_RSP = signal.lfilter(b, 1, [RShoulderPitch], zi=z_RSP)
-            RShoulderRoll, z_RSR = signal.lfilter(b, 1, [RShoulderRoll], zi=z_RSR)
-            RElbowYaw, z_REY = signal.lfilter(b, 1, [RElbowYaw], zi=z_REY)
-            RElbowRoll, z_RER = signal.lfilter(b, 1, [RElbowRoll], zi=z_RER)
+            RShoulderPitch, z_RSP = signal.lfilter(b, a, [RShoulderPitch], zi=z_RSP)
+            RShoulderRoll, z_RSR = signal.lfilter(b, a, [RShoulderRoll], zi=z_RSR)
+            RElbowYaw, z_REY = signal.lfilter(b, a, [RElbowYaw], zi=z_REY)
+            RElbowRoll, z_RER = signal.lfilter(b, a, [RElbowRoll], zi=z_RER)
 
-            HipPitch, z_HP = signal.lfilter(b, 1, [HipPitch], zi=z_HP)
-
+            HipPitch, z_HP = signal.lfilter(b, a, [HipPitch], zi=z_HP)
             
-            # Filter angles using a Butterworth filter
-            # Left arm
-            # LSP_arr = butter_lowpass_filter()
-            # LSR_arr = butter_lowpass_filter(LSR_arr, window_length, polyorder)
-            # LEY_arr = butter_lowpass_filter(LEY_arr, window_length, polyorder)
-            # LER_arr = butter_lowpass_filter(LER_arr, window_length, polyorder)
-            # # Right arm
-            # RSP_arr = butter_lowpass_filter(RSP_arr, window_length, polyorder)
-            # RSR_arr = butter_lowpass_filter(RSR_arr, window_length, polyorder)
-            # REY_arr = butter_lowpass_filter(REY_arr, window_length, polyorder)
-            # RER_arr = butter_lowpass_filter(RER_arr, window_length, polyorder)
-
+            LSP_arr_filt.append(LShoulderRoll)
+            # print(LShoulderPitch)
             
             # Extract the filtered angle
             # LShoulderPitch = LSP_arr[window_length]
@@ -310,24 +311,24 @@ def main(session):
             # Speed limits for the joints
             fractionMaxSpeed = 0.15
 
-            fractionMaxSpeed_shoulders = 0.175
-            fractionMaxSpeed_elbows = 0.175
-            fractionMaxSpeed_hip = 0.125
+            fractionMaxSpeed_shoulders = 0.15
+            fractionMaxSpeed_elbows = 0.15
+            fractionMaxSpeed_hip = 0.1
 
             # if names and angles:
             #     motion_service.setAngles(names, angles, fractionMaxSpeed)
             #     motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
 
-            # if names_shoulders and angles_shoulders and names_elbows and angles_elbows:
+            if names_shoulders and angles_shoulders and names_elbows and angles_elbows and time_elapsed > 2.0:
                 
-            #     motion_service.setAngles(names_shoulders, angles_shoulders, fractionMaxSpeed_shoulders)
-            #     motion_service.setAngles(names_elbows, angles_elbows, fractionMaxSpeed_elbows)
-            #     motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
+                motion_service.setAngles(names_shoulders, angles_shoulders, fractionMaxSpeed_shoulders)
+                motion_service.setAngles(names_elbows, angles_elbows, fractionMaxSpeed_elbows)
+                motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
             
             time_elapsed = time.time() - t1
             print(time_elapsed)
-            # t1 = time.time()
-            if time_elapsed > 10:
+
+            if time_elapsed > 30:
                 break
         
         except Exception as e:
@@ -344,8 +345,8 @@ def main(session):
     sampling_rate = N_samples/time_elapsed
     time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
 
-    # data = np.sin(2*np.pi*6*time) + np.random.randn(len(time))
     data = np.array(LSP_arr)
+    data_filt = np.array(LSP_arr_filt)
     
     fourier_transform = np.fft.rfft(data)
 
@@ -363,11 +364,23 @@ def main(session):
         axs[0].plot(frequency, power_spectrum)
         axs[0].set(xlabel='frequency [1/s]', ylabel='power')
         axs[0].set_title('Power Spectrum')
+
     if len(time_samples) == len(data):
         axs[1].plot(time_samples, data)
         axs[1].set(xlabel='time [s]', ylabel='LSP angle')
         axs[1].set_title('LSP angle signal')
+        
+
+    if len(time_samples) == len(data_filt):
+        axs[1].plot(time_samples, data_filt)
+        axs[1].legend(['signal', 'filtered'])
+        # axs[1].set(xlabel='time [s]', ylabel='LSP angle filt')
+        # axs[1].set_title('LSP angle signal _filtered')
+
     plt.show()
+
+    
+
     
 
 

@@ -143,7 +143,7 @@ def main(session):
     posture_service.goToPosture("StandInit", 0.5)
 
     # create proxy on ALMemory
-    memProxy = ALProxy("ALMemory","130.251.13.150",9559)
+    memProxy = ALProxy("ALMemory","130.251.13.154",9559)
 
     # Set stiffness of the interested joints
     stiffness = 0.5
@@ -294,7 +294,7 @@ def main(session):
 
             fractionMaxSpeed_shoulders = 0.175
             fractionMaxSpeed_elbows = 0.175
-            fractionMaxSpeed_hip = 0.125
+            fractionMaxSpeed_hip = 0.075
 
             # if names and angles:
             #     motion_service.setAngles(names, angles, fractionMaxSpeed)
@@ -318,7 +318,7 @@ def main(session):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.150",
+    parser.add_argument("--ip", type=str, default="130.251.13.154",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")
