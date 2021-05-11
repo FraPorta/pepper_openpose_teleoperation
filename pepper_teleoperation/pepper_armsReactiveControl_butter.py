@@ -126,9 +126,39 @@ def update_arr(arr, angle, window_length):
 
     return arr
 
+def plot_data(axs, raw_data, filt_data, name, time_elapsed, pos_x, pos_y, plot_PS=False):
+    # Plot power spectrum and time signals (Raw and filtered)
+    data = np.array(raw_data)
+    data_filt = np.array(filt_data)
+
+    N_samples = len(data)
+    sampling_rate = N_samples/time_elapsed
+    time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
+
+    if plot_PS:
+        # POWER SPECTRUM
+        fourier_transform = np.fft.rfft(data)
+        abs_fourier_transform = np.abs(fourier_transform)
+        power_spectrum = np.square(abs_fourier_transform)
+        frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
+        if len(frequency) == len(power_spectrum):
+            axs[0].plot(frequency, power_spectrum)
+            axs[0].set(xlabel='frequency [1/s]', ylabel='power')
+            axs[0].set_title('Power Spectrum')
+
+    if len(time_samples) == len(data):
+        axs[pos_x, pos_y].plot(time_samples, data)
+        axs[pos_x, pos_y].set(xlabel='time [s]', ylabel='Angle [rad]')
+        axs[pos_x, pos_y].set_title('%s angle' % name)
+        
+    if len(time_samples) == len(data_filt):
+        axs[pos_x, pos_y].plot(time_samples, data_filt)
+        axs[pos_x, pos_y].legend(['signal', 'filtered'])
+
+    # print ("Sampling rate: %f" % sampling_rate)
 
     
-def main(session):
+def main(session, ip_addr, port, show_plot):
     """
     This example uses the setAngles and setStiffnesses methods
     in order to simulate reactive control.
@@ -146,8 +176,8 @@ def main(session):
     # Send robot to Stand Init
     posture_service.goToPosture("StandInit", 0.5)
 
-    # create proxy on ALMemory
-    memProxy = ALProxy("ALMemory","130.251.13.154", 9559)
+    # Create proxy on ALMemory
+    memProxy = ALProxy("ALMemory", ip_addr, port)
 
     # Set stiffness of the interested joints
     stiffness = 0.5
@@ -174,19 +204,21 @@ def main(session):
     # Filter parameters 
     ## MOLTO BUONI
     # fs = 5.3        # sample rate, Hz
-    # cutoff = 1.0    # desired cutoff frequency of the filter, Hz , slightly higher than actual 0.05, 0.1 Hz
+    # cutoff = 1.0    # desired cutoff frequency of the filter, Hz 
     # nyq = 0.5 * fs  # Nyquist Frequency
     # order = 2       # filter order
 
-    fs = 5.3        # sample rate, Hz
-    cutoff = 0.8   # desired cutoff frequency of the filter, Hz , slightly higher than actual 0.5 Hz
-    nyq = 0.5 * fs  # Nyquist Frequency
-    order = 1      # filter order
-    normal_cutoff = cutoff / nyq # Cutoff freq for lowpass filter
+    ## PROVA
+    fs = 5.3            # sample rate, Hz
+    cutoff = 0.7        # desired cutoff frequency of the filter, Hz 
+    nyq = 0.5 * fs      # Nyquist Frequency
+    order = 1           # filter order
+    
+    normal_cutoff = cutoff / nyq    # Cutoff freq for lowpass filter
 
     b, a = signal.butter(order, normal_cutoff, btype='low', analog=False, output='ba') 
 
-    # # Plot the frequency response.
+    # # Plot the frequency response of the filter
     # w, h = signal.freqz(b, a)
     # plt.subplot(2, 1, 1)
     # plt.plot(0.5*fs*w/np.pi, np.abs(h), 'b')
@@ -198,8 +230,7 @@ def main(session):
     # plt.grid()
     # plt.show()
 
-    # b = signal.firwin(order + 1, cutoff)
-
+    # Initialize filters for each angle
     z_LSP = signal.lfilter_zi(b, a)   
     z_LSR = signal.lfilter_zi(b, a)   
     z_LEY = signal.lfilter_zi(b, a)   
@@ -210,25 +241,31 @@ def main(session):
     z_REY = signal.lfilter_zi(b, a)   
     z_RER = signal.lfilter_zi(b, a)   
     
-    z_HP = signal.lfilter_zi(b, a)   
+    b_HP, a_HP = signal.butter(order, 0.3/nyq, btype='low', analog=False, output='ba') 
+    z_HP = signal.lfilter_zi(b_HP, a_HP)   
 
-    # Initialize array to store angles for filtering
+    # Initialize arrays to store angles for plots
+    # Left arm
     LSP_arr = []
     LSP_arr_filt = []
-    # LSR_arr = np.zeros(window_length + 1)
-    # LEY_arr = np.zeros(window_length + 1)
-    # LER_arr = np.zeros(window_length + 1)
-
-    # RSP_arr = np.zeros(window_length + 1)
-    # RSR_arr = np.zeros(window_length + 1)
-    # REY_arr = np.zeros(window_length + 1)
-    # RER_arr = np.zeros(window_length + 1)
-
-    # Threshold to control or not a joint
-    thresh = 0
-
-    # COunter
-    count = 1
+    LSR_arr = []
+    LSR_arr_filt = []
+    LEY_arr = []
+    LEY_arr_filt = []
+    LER_arr = []
+    LER_arr_filt = []
+    # Right arm
+    RSP_arr = []
+    RSP_arr_filt= []
+    RSR_arr = []
+    RSR_arr_filt = []
+    REY_arr = []
+    REY_arr_filt = []
+    RER_arr = []
+    RER_arr_filt = []
+    # Hip
+    HP_arr = []
+    HP_arr_filt = []
 
     # Initialize time counter
     t1 = time.time()
@@ -237,7 +274,7 @@ def main(session):
     # Start loop to receive angles and control Pepper joints
     while KtA.start_flag:
         try:
-            # Init array with names to control Pepper joints
+            # Init lists to control Pepper joints
             names = []
             angles = []
 
@@ -247,19 +284,21 @@ def main(session):
             # Saturate angles to avoid exceding Pepper limits
             saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch)
             
+            if show_plot:
+                # Update lists for plots
+                LSP_arr.append(LShoulderPitch)
+                LSR_arr.append(LShoulderRoll)
+                LEY_arr.append(LElbowYaw)
+                LER_arr.append(LElbowRoll)
+
+                RSP_arr.append(RShoulderPitch)
+                RSR_arr.append(RShoulderRoll)
+                REY_arr.append(RElbowYaw)
+                RER_arr.append(RElbowRoll)
+
+                HP_arr.append(HipPitch)
+
             ### DATA REAL-TIME FILTERING ###
-            # Update arrays 1
-            LSP_arr.append(LShoulderRoll)
-            # LSP_arr = update_arr(LSP_arr, LShoulderPitch, window_length)
-            # LSR_arr = update_arr(LSR_arr, LShoulderRoll, window_length)
-            # LEY_arr = update_arr(LEY_arr, LElbowYaw, window_length)
-            # LER_arr = update_arr(LER_arr, LElbowRoll, window_length)
-
-            # RSP_arr = update_arr(RSP_arr, RShoulderPitch, window_length)
-            # RSR_arr = update_arr(RSR_arr, RShoulderRoll, window_length)
-            # REY_arr = update_arr(REY_arr, RElbowYaw, window_length)
-            # RER_arr = update_arr(RER_arr, RElbowRoll, window_length)
-
             # Filter data with Butterworth filter
             LShoulderPitch, z_LSP = signal.lfilter(b, a, [LShoulderPitch], zi=z_LSP )
             LShoulderRoll, z_LSR = signal.lfilter(b, a, [LShoulderRoll], zi=z_LSR)
@@ -271,24 +310,22 @@ def main(session):
             RElbowYaw, z_REY = signal.lfilter(b, a, [RElbowYaw], zi=z_REY)
             RElbowRoll, z_RER = signal.lfilter(b, a, [RElbowRoll], zi=z_RER)
 
-            HipPitch, z_HP = signal.lfilter(b, a, [HipPitch], zi=z_HP)
+            HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [HipPitch], zi=z_HP)
             
-            LSP_arr_filt.append(LShoulderRoll)
-            # print(LShoulderPitch)
+            if show_plot:
+                # Store filtered angles for plots
+                LSP_arr_filt.append(LShoulderPitch)
+                LSR_arr_filt.append(LShoulderRoll)
+                LEY_arr_filt.append(LElbowYaw)
+                LER_arr_filt.append(LElbowRoll)
+
+                RSP_arr_filt.append(RShoulderPitch)
+                RSR_arr_filt.append(RShoulderRoll)
+                REY_arr_filt.append(RElbowYaw)
+                RER_arr_filt.append(RElbowRoll)
+                
+                HP_arr_filt.append(HipPitch)
             
-            # Extract the filtered angle
-            # LShoulderPitch = LSP_arr[window_length]
-            # LShoulderRoll = LSR_arr[window_length]
-            # LElbowYaw = LEY_arr[window_length]
-            # LElbowRoll = LER_arr[window_length]
-
-            # RShoulderPitch = RSP_arr[window_length]
-            # RShoulderRoll = RSR_arr[window_length]
-            # RElbowYaw = REY_arr[window_length]
-            # RElbowRoll = RER_arr[window_length]
-
-            
-
             ### Pepper joints control ###
             # Both shoulders
             names_shoulders = ["LShoulderPitch","LShoulderRoll","RShoulderPitch","RShoulderRoll"]
@@ -315,21 +352,22 @@ def main(session):
             fractionMaxSpeed_elbows = 0.15
             fractionMaxSpeed_hip = 0.1
 
-            # if names and angles:
-            #     motion_service.setAngles(names, angles, fractionMaxSpeed)
-            #     motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
-
-            if names_shoulders and angles_shoulders and names_elbows and angles_elbows and time_elapsed > 2.0:
-                
-                motion_service.setAngles(names_shoulders, angles_shoulders, fractionMaxSpeed_shoulders)
-                motion_service.setAngles(names_elbows, angles_elbows, fractionMaxSpeed_elbows)
+            # Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) 
+            # All joints with the same speed
+            if names and angles and time_elapsed > 2.0:
+                motion_service.setAngles(names, angles, fractionMaxSpeed)
                 motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
+
+            # Different joints have different speeds
+            # if names_shoulders and angles_shoulders and names_elbows and angles_elbows and time_elapsed > 2.0:
+                
+            #     motion_service.setAngles(names_shoulders, angles_shoulders, fractionMaxSpeed_shoulders)
+            #     motion_service.setAngles(names_elbows, angles_elbows, fractionMaxSpeed_elbows)
+            #     motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
             
             time_elapsed = time.time() - t1
-            print(time_elapsed)
-
-            if time_elapsed > 30:
-                break
+            # print(time_elapsed)
+            
         
         except Exception as e:
             print(e)
@@ -339,49 +377,32 @@ def main(session):
             KtA.stop_receiving()
             main(session)
             sys.exit(-1)
-
-    # Plot power spectrum and time signal
-    N_samples = len(LSP_arr)
-    sampling_rate = N_samples/time_elapsed
-    time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
-
-    data = np.array(LSP_arr)
-    data_filt = np.array(LSP_arr_filt)
-    
-    fourier_transform = np.fft.rfft(data)
-
-    abs_fourier_transform = np.abs(fourier_transform)
-
-    power_spectrum = np.square(abs_fourier_transform)
-
-    frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
-
-    print ("Sampling rate: %f" % sampling_rate)
-
-    fig, axs = plt.subplots(2)
-    fig.suptitle('LSP Time signal and power spectrum')
-    if len(frequency) == len(power_spectrum):
-        axs[0].plot(frequency, power_spectrum)
-        axs[0].set(xlabel='frequency [1/s]', ylabel='power')
-        axs[0].set_title('Power Spectrum')
-
-    if len(time_samples) == len(data):
-        axs[1].plot(time_samples, data)
-        axs[1].set(xlabel='time [s]', ylabel='LSP angle')
-        axs[1].set_title('LSP angle signal')
         
+        except KeyboardInterrupt:
+            if show_plot:
+                # Create figure with 9 subplots
+                fig, axs = plt.subplots(3,3)
+                fig.suptitle('Joints angles over time')
 
-    if len(time_samples) == len(data_filt):
-        axs[1].plot(time_samples, data_filt)
-        axs[1].legend(['signal', 'filtered'])
-        # axs[1].set(xlabel='time [s]', ylabel='LSP angle filt')
-        # axs[1].set_title('LSP angle signal _filtered')
+                # Plot joint angles
+                plot_data(axs, LSP_arr, LSP_arr_filt, 'LSP', time_elapsed, pos_x=0, pos_y=0)
+                plot_data(axs, LSR_arr, LSR_arr_filt, 'LSR', time_elapsed, pos_x=0, pos_y=1)
+                plot_data(axs, LEY_arr, LEY_arr_filt, 'LEY', time_elapsed, pos_x=0, pos_y=2)
+                plot_data(axs, LER_arr, LER_arr_filt, 'LER', time_elapsed, pos_x=1, pos_y=0)
 
-    plt.show()
+                plot_data(axs, RSP_arr, RSP_arr_filt, 'RSP', time_elapsed, pos_x=1, pos_y=1)
+                plot_data(axs, RSR_arr, RSR_arr_filt, 'RSR', time_elapsed, pos_x=1, pos_y=2)
+                plot_data(axs, REY_arr, REY_arr_filt, 'REY', time_elapsed, pos_x=2, pos_y=0)
+                plot_data(axs, RER_arr, RER_arr_filt, 'RER', time_elapsed, pos_x=2, pos_y=1)
 
-    
+                plot_data(axs, HP_arr,  HP_arr_filt,  'HP',  time_elapsed, pos_x=2, pos_y=2)
 
-    
+                # Show plot
+                plt.show()
+                sys.exit(1)
+            else:
+                sys.exit(1)
+
 
 
 
@@ -391,8 +412,13 @@ if __name__ == "__main__":
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")
+    parser.add_argument("--show_plots", type=bool, default=True,
+                        help="Select True if you want to see the plots when you interrupt the script with the keyboard")
 
     args = parser.parse_args()
+    show_plot = args.show_plots
+    ip_addr = args.ip 
+    port = args.port
     session = qi.Session()
     try:
         session.connect("tcp://" + args.ip + ":" + str(args.port))
@@ -400,102 +426,44 @@ if __name__ == "__main__":
         print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
                "Please check your script arguments. Run with -h option for help.")
         sys.exit(1)
-    main(session)
+    main(session, ip_addr, port, show_plot)
 
 
 '''
-# Control the angle only if the difference from the last control angle is greater than thresh
-            # Left arm
-            # if np.linalg.norm( LSP_arr[window_length] - LSP_arr[window_length-1] ) > thresh :  
-            #     names.append("LShoulderPitch")
-            #     angles.append(float(LShoulderPitch))
-            
-            # if np.linalg.norm(LSR_arr[window_length] - LSR_arr[window_length-1]) > thresh : 
-            #     names.append("LShoulderRoll")
-            #     angles.append(float(LShoulderRoll))
-            
-            # if np.linalg.norm(LEY_arr[window_length] - LEY_arr[window_length-1]) > thresh : 
-            #     names.append("LElbowYaw")
-            #     angles.append(float(LElbowYaw))
+# Plot power spectrum and time signals (Raw and filtered)
+    # N_samples = len(LSP_arr)
+    # sampling_rate = N_samples/time_elapsed
+    # time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
 
-            # if np.linalg.norm(LER_arr[window_length] - LER_arr[window_length-1]) > thresh : 
-            #     names.append("LElbowRoll")
-            #     angles.append(float(LElbowRoll))
+    # data = np.array(LSP_arr)
+    # data_filt = np.array(LSP_arr_filt)
+    
+    # fourier_transform = np.fft.rfft(data)
 
-            # # Right arm
-            # if np.linalg.norm( RSP_arr[window_length] - RSP_arr[window_length-1] ) > thresh :  
-            #     names.append("RShoulderPitch")
-            #     angles.append(float(RShoulderPitch))
-            
-            # if np.linalg.norm(RSR_arr[window_length] - RSR_arr[window_length-1]) > thresh : 
-            #     names.append("RShoulderRoll")
-            #     angles.append(float(RShoulderRoll))
-            
-            # if np.linalg.norm(REY_arr[window_length] - REY_arr[window_length-1]) > thresh : 
-            #     names.append("RElbowYaw")
-            #     angles.append(float(RElbowYaw))
+    # abs_fourier_transform = np.abs(fourier_transform)
 
-            # if np.linalg.norm(RER_arr[window_length] - RER_arr[window_length-1]) > thresh: 
-            #     names.append("RElbowRoll")
-            #     angles.append(float(RElbowRoll))
+    # power_spectrum = np.square(abs_fourier_transform)
 
-        ## Left arm ##
-            # names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll"]
-            # angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll)]
+    # frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
 
-            # # Left shoulder
-            # names = ["LShoulderPitch","LShoulderRoll"]
-            # angles = [float(LShoulderPitch),float(LShoulderRoll)]
+    # print ("Sampling rate: %f" % sampling_rate)
 
-            # Left elbow
-            # names = ["LElbowYaw", "LElbowRoll"]
-            # angles = [float(LElbowYaw), float(LElbowRoll)]
+    # fig, axs = plt.subplots(2)
+    # fig.suptitle('LSP Time signal and power spectrum')
+    # if len(frequency) == len(power_spectrum):
+    #     axs[0].plot(frequency, power_spectrum)
+    #     axs[0].set(xlabel='frequency [1/s]', ylabel='power')
+    #     axs[0].set_title('Power Spectrum')
 
-            ## Right arm ##
-            # names = ["RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll"]
-            # angles = [float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll)]
+    # if len(time_samples) == len(data):
+    #     axs[1].plot(time_samples, data)
+    #     axs[1].set(xlabel='time [s]', ylabel='LSP angle')
+    #     axs[1].set_title('LSP angle signal')
+        
 
-            # Right shoulder
-            # names = ["RShoulderPitch","RShoulderRoll"]
-            # angles = [float(RShoulderPitch), float(RShoulderRoll)]
+    # if len(time_samples) == len(data_filt):
+    #     axs[1].plot(time_samples, data_filt)
+    #     axs[1].legend(['signal', 'filtered'])
 
-            # # Right elbow
-            # names = [ "RElbowYaw","RElbowRoll"]
-            # angles = [float(RElbowYaw), float(RElbowRoll)]
-
-'''
-'''
-# # Update arrays 2
-            # LSP_arr_filt = update_arr(LSP_arr, LShoulderPitch, window_length)
-            # LSR_arr_filt = update_arr(LSR_arr, LShoulderRoll, window_length)
-            # LEY_arr_filt = update_arr(LEY_arr, LElbowYaw, window_length)
-            # LER_arr_filt = update_arr(LER_arr, LElbowRoll, window_length)
-
-            # RSP_arr_filt = update_arr(RSP_arr, RShoulderPitch, window_length)
-            # RSR_arr_filt = update_arr(RSR_arr, RShoulderRoll, window_length)
-            # REY_arr_filt = update_arr(REY_arr, RElbowYaw, window_length)
-            # RER_arr_filt = update_arr(RER_arr, RElbowRoll, window_length)
-            
-            # # Filter angles using a Savitzky-Golay filter
-            # # Left arm
-            # LSP_arr_filt = savgol_filter(LSP_arr_filt, window_length, polyorder)
-            # LSR_arr_filt = savgol_filter(LSR_arr_filt, window_length, polyorder)
-            # LEY_arr_filt = savgol_filter(LEY_arr_filt, window_length, polyorder)
-            # LER_arr_filt = savgol_filter(LER_arr_filt, window_length, polyorder)
-            # # Right arm
-            # RSP_arr_filt = savgol_filter(RSP_arr_filt, window_length, polyorder)
-            # RSR_arr_filt = savgol_filter(RSR_arr_filt, window_length, polyorder)
-            # REY_arr_filt = savgol_filter(REY_arr_filt, window_length, polyorder)
-            # RER_arr_filt = savgol_filter(RER_arr_filt, window_length, polyorder)
-
-            # # Extract the filtered angle
-            # LShoulderPitch = LSP_arr_filt[window_length]
-            # LShoulderRoll = LSR_arr_filt[window_length]
-            # LElbowYaw = LEY_arr_filt[window_length]
-            # LElbowRoll = LER_arr_filt[window_length]
-
-            # RShoulderPitch = RSP_arr_filt[window_length]
-            # RShoulderRoll = RSR_arr_filt[window_length]
-            # RElbowYaw = REY_arr_filt[window_length]
-            # RElbowRoll = RER_arr_filt[window_length]
+    # plt.show()
 '''
