@@ -267,7 +267,11 @@ try:
     # Change path to point to the models folder 
     #params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
     params["model_folder"] = home + '/openpose/models/'
-    params["net_resolution"] = "-1x368"         # select net resolution (necessary for low end graphic cards)
+    # params["net_resolution"] = "-1x256"         # select net resolution (necessary for low end graphic cards)
+    # params["face"] = "true"
+    # params["face_net_resolution"] = "240x240"
+    # params["hand"] = "true"
+    # params["hand_net_resolution"] = "256x256"
     # params["camera"] = "-1"                     # automatically select camera input (-1)
     # params["camera_resolution"] = "1920x1080"   # set camera resolution to the correct one for the kinect [comment if using webcam]
     params["number_people_max"] = "1"           # limit the number of recognized people to 1

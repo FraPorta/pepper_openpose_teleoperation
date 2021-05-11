@@ -28,9 +28,6 @@ class KeypointsToAngles:
         self.sr = SocketReceive()
 
         print("Start receiving keypoints...")
-
-        # # Start loop to receive keypointsand calculate angles
-        # self.start()
     
     ## method __del__
     #
@@ -160,10 +157,6 @@ class KeypointsToAngles:
         intermediate_angle_1 = np.arccos(np.dot(v_6_7, n_1_5_6) / (np.linalg.norm(v_6_7) * np.linalg.norm(n_1_5_6)))
         intermediate_angle_2 = np.arccos(np.dot(v_6_7, R_left_arm) / (np.linalg.norm(v_6_7) * np.linalg.norm(R_left_arm)))
 
-        # print("Module LEY: %f" % theta_LEY_module)
-        # print("IntANg1: %f" % intermediate_angle_1)
-        # print("IntANg2: %f" % intermediate_angle_2)
-
         # Choice of the correct LElbowYaw angle using intermediate angles values
         if intermediate_angle_1 <= np.pi/2:
             LElbowYaw = -theta_LEY_module 
@@ -172,9 +165,6 @@ class KeypointsToAngles:
                 LElbowYaw = theta_LEY_module 
             elif intermediate_angle_2 <= np.pi/2:
                 LElbowYaw = theta_LEY_module - (2 * np.pi)
-
-        # print(LElbowYaw)
-        # print(" ")
 
         # Formula for LElbowRoll angle
         LElbowRoll = np.arccos(np.dot(v_6_7, v_6_5) / (np.linalg.norm(v_6_7) * np.linalg.norm(v_6_5))) - np.pi
@@ -236,7 +226,7 @@ class KeypointsToAngles:
         # Calculate vector
         v_0_8_curr = self.vector_from_points(P0_curr, P8_curr)
 
-        # Normal to Y-Z plane
+        # Normals to axis planes
         n_YZ = [1, 0, 0]
         n_XZ = [0, 1, 0]
         n_XY = [0, 0, 1]
@@ -258,6 +248,38 @@ class KeypointsToAngles:
             HipPitch = omega_HP_module - np.pi
         
         return HipPitch
+    
+    def obtain_HeadYaw_angles(self, P0, P1):
+        # print(P0)
+        # print(P1)
+
+        # Calculate vector
+        v_1_0 = self.vector_from_points(P1, P0)
+        # print(v_1_0)
+        # Normals to axis planes
+        n_YZ = [1, 0, 0]
+        n_XZ = [0, 1, 0]
+        n_XY = [0, 0, 1]
+
+        # Project vector on XZ plane
+        v_1_0_proj = v_1_0 - np.dot(v_1_0, n_XZ)
+        print(v_1_0_proj)
+        # Calculate HeadYaw module
+        omega_HEY_module = np.pi - np.arccos((np.dot(v_1_0_proj, n_XY)) / (np.linalg.norm(v_1_0_proj) * np.linalg.norm(n_XY)))
+
+        # Intermediate vector and angle to calculate positive or negative pich
+        intermediate_angle = np.arccos(np.dot(v_1_0_proj, n_YZ) / (np.linalg.norm(v_1_0_proj) * np.linalg.norm(n_YZ)))
+
+        # print("Module: %f" % (omega_HEY_module * 180/np.pi))
+        # print("IA: %f" % (intermediate_angle * 180/np.pi))
+
+        # Choose positive or negative Yaw angle
+        if intermediate_angle > np.pi/2:
+            HeadYaw = omega_HEY_module 
+        else:
+            HeadYaw = -omega_HEY_module  
+        
+        return HeadYaw
 
 
     ## function invert_right_left
@@ -293,8 +315,6 @@ class KeypointsToAngles:
 
     def get_angles(self):
         try:
-            # # Init dictionary
-            # wp_dict = {}
 
             # LShoulderPitch and LShoulderRoll needed keypoints
             LS = ['1','5','6','8']
@@ -311,10 +331,11 @@ class KeypointsToAngles:
             # HipPitch needed keypoints
             HP = ['0', '8']
 
-            # while self.start_flag:
+            # HeadYaw needed keypoints
+            HEY = ['0', '1']
 
             # Init angles
-            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
+            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = HeadYaw = None
 
             # Receive keypoints from socket
             wp_dict = self.sr.receive_keypoints()
@@ -322,11 +343,18 @@ class KeypointsToAngles:
             # Invert right arm with left arm
             wp_dict = self.invert_right_left(wp_dict) 
 
-            # HipPitch angles (Green arm on OpenPose)
+            # HipPitch angles 
             if all (body_part in wp_dict for body_part in HP):
                 HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]))
+            
+            # HeadYaw angles 
+            if all (body_part in wp_dict for body_part in HEY):
+                HeadYaw = self.obtain_HeadYaw_angles(wp_dict.get(HEY[0]), wp_dict.get(HEY[1]))
+                # Print angles
+                print("HeadYaw:")
+                print((HeadYaw * 180 )/ np.pi)
 
-            # LShoulder angles (Green arm on OpenPose)
+            # LShoulder angles 
             if all (body_part in wp_dict for body_part in LS):        
                 LShoulderPitch, LShoulderRoll = self.obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
 
@@ -371,7 +399,7 @@ class KeypointsToAngles:
                 # print("RElbowRoll:")
                 # print((RElbowRoll * 180)/ np.pi)
             
-            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
+            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw
                 
                 
         except Exception as e:
