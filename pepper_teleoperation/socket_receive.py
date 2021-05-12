@@ -28,6 +28,8 @@ class SocketReceive:
         except Exception as e:
             print(e)
             sys.exit(-1)
+        except KeyboardInterrupt:
+            sys.exit(1)
     
     ## method receive_keypoints
     #
@@ -41,6 +43,9 @@ class SocketReceive:
         except Exception as e:
             print(e)
             sys.exit(-1)
+        except KeyboardInterrupt:
+            self.close()
+            sys.exit(1)
 
     ## method close
     # 

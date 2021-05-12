@@ -15,14 +15,14 @@ import matplotlib.pyplot as plt
 
 from keypoints_to_angles import KeypointsToAngles 
 
-# LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = None
+LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
 # session = None
 
 ## function saturate_angles
 #
 # Saturate angles before using them for controlling Pepper joints
-def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP, HEY):
-    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw
+def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
+    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
 
     ## LEFT ##
     
@@ -110,14 +110,14 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP, HEY):
     elif HP > 1.0385:
         HipPitch = 1.0385
     
-    # HeadYaw saturation: -2.0857 to 2.0857
-    if HEY is None:
-        HeadYaw = mProxy.getData("Device/SubDeviceList/HeadYaw/Position/Actuator/Value")
-        # print("RER")
-    elif HEY < -2.0857:
-        HeadYaw = -2.0857
-    elif HEY > 2.0857:
-        HeadYaw = 2.0857
+    # # HeadYaw saturation: -2.0857 to 2.0857
+    # if HEY is None:
+    #     HeadYaw = mProxy.getData("Device/SubDeviceList/HeadYaw/Position/Actuator/Value")
+    #     # print("RER")
+    # elif HEY < -2.0857:
+    #     HeadYaw = -2.0857
+    # elif HEY > 2.0857:
+    #     HeadYaw = 2.0857
 
     
 def update_arr(arr, angle, window_length):
@@ -175,23 +175,26 @@ def plot_data(axs, raw_data, filt_data, name, time_elapsed, pos_x, pos_y, plot_P
 def main(session, ip_addr, port, show_plot):
     """
     This example uses the setAngles and setStiffnesses methods
-    in order to perform reactive control.
+    in order to perform reactive control on Pepper upper body.
     """
 
-    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw
+    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
 
     # Get the services ALMotion and ALRobotPosture
     motion_service  = session.service("ALMotion")
     posture_service = session.service("ALRobotPosture")
+
+    # Get the service ALFaceDetection.
+    faceProxy = ALProxy("ALFaceDetection", ip_addr, port)
+
+    # Create proxy on ALMemory
+    memProxy = ALProxy("ALMemory", ip_addr, port)
 
     # Wake up robot
     motion_service.wakeUp()
 
     # Send robot to Stand Init
     posture_service.goToPosture("StandInit", 0.5)
-
-    # Create proxy on ALMemory
-    memProxy = ALProxy("ALMemory", ip_addr, port)
 
     # Set stiffness of the interested joints
     stiffness = 0.5
@@ -209,11 +212,23 @@ def main(session, ip_addr, port, show_plot):
 
     motion_service.setStiffnesses("HipPitch", stiffness)
 
-    motion_service.setStiffnesses("HeadYaw", stiffness)
+    # motion_service.setStiffnesses("HeadYaw", stiffness)
 
-    # Wait some time
-    # time.sleep(2)
-    
+
+    # print("Is tracking enabled?", faceProxy.isTrackingEnabled())
+    # # Enable face tracking
+    # faceProxy.setRecognitionEnabled(False)
+    # faceProxy.enableTracking(True)
+    # # faceProxy.setTrackingEnabled(True)
+
+    # print("Is tracking enabled?", faceProxy.isTrackingEnabled())
+
+    # # Subscribe to the ALFaceDetection proxy
+    # # This means that the module will write in ALMemory with
+    # # the given period below
+    # period = 500
+    # faceProxy.subscribe("Test_Face", period, 0.0 )
+
     # Initialize class KeypointsToAngles
     KtA = KeypointsToAngles()
 
@@ -290,15 +305,19 @@ def main(session, ip_addr, port, show_plot):
     # Start loop to receive angles and control Pepper joints
     while KtA.start_flag:
         try:
+            # val = memProxy.getData("FaceDetected", 0)
+            # if val != []:
+            #     print("Face detected: ", val[1])
+            
             # Init lists to control Pepper joints
             names = []
             angles = []
 
             # Get angles from keypoints
-            LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw = KtA.get_angles()
+            LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch = KtA.get_angles()
 
             # Saturate angles to avoid exceding Pepper limits
-            saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw)
+            saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch)
             
             if show_plot:
                 # Update lists for plots
@@ -355,9 +374,9 @@ def main(session, ip_addr, port, show_plot):
             names_hip = ["HipPitch"]
             angles_hip = [float(HipPitch)]
 
-            # HeadYaw
-            names_hey = ["HeadYaw"]
-            angles_hey = [float(HeadYaw)]
+            # # HeadYaw
+            # names_hey = ["HeadYaw"]
+            # angles_hey = [float(HeadYaw)]
 
             # Arms 
             names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
@@ -372,11 +391,11 @@ def main(session, ip_addr, port, show_plot):
             fractionMaxSpeed_elbows = 0.15
             fractionMaxSpeed_hip = 0.1
 
-            # Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) 
-            # All joints with the same speed
-            # if names and angles and time_elapsed > 2.0:
-            #     motion_service.setAngles(names, angles, fractionMaxSpeed)
-            #     motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
+            Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) 
+            All joints with the same speed
+            if names and angles and time_elapsed > 2.0:
+                motion_service.setAngles(names, angles, fractionMaxSpeed)
+                motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
 
             # Different joints have different speeds
             # if names_shoulders and angles_shoulders and names_elbows and angles_elbows and time_elapsed > 2.0:
@@ -387,7 +406,6 @@ def main(session, ip_addr, port, show_plot):
             
             time_elapsed = time.time() - t1
             # print(time_elapsed)
-            
         
         except Exception as e:
             print(e)
@@ -395,7 +413,7 @@ def main(session, ip_addr, port, show_plot):
             print(exc_type, exc_tb.tb_lineno)
             # Restart loop
             KtA.stop_receiving()
-            main(session)
+            # main(session)
             sys.exit(-1)
         
         except KeyboardInterrupt:

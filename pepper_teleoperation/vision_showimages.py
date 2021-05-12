@@ -4,55 +4,90 @@ import qi
 import argparse
 import sys
 import time
-from PIL import Image
+import cv2
+import numpy as np
+import math
+from naoqi import ALProxy
+import vision_definitions
 
+def main(session, ip_addr, port):
+    try:
+        """
+        First get an image, then show it on the screen with PIL.
+        """
+        # Get the service ALVideoDevice.
+        video_service = session.service("ALVideoDevice")
 
-def main(session):
-    """
-    First get an image, then show it on the screen with PIL.
-    """
-    # Get the service ALVideoDevice.
+        cameraID = 0   # Top Camera
+        resolution = vision_definitions.kQQVGA  # 320 * 240
+        colorSpace = vision_definitions.kBGRColorSpace
+        # colorSpace = vision_definitions.kYUV422ColorSpace
+        
+        fps = 20
+        
+        videoClient = video_service.subscribe("python_client", resolution, colorSpace, fps)
+        print(videoClient)
+        if videoClient != '':
+            video_service.setParam(vision_definitions.kCameraSelectID, cameraID)
 
-    video_service = session.service("ALVideoDevice")
-    resolution = 2    # VGA
-    colorSpace = 11   # RGB
+            userWantsToExit = False
+            while not userWantsToExit:
+                t0 = time.time()
 
-    # videoClient = video_service.subscribe("python_client", resolution, colorSpace, 5)
+                # Get a camera image.
+                # image[6] contains the image data passed as an array of ASCII chars.
+                pepperImage = video_service.getImageRemote(videoClient)
 
-    while True:
-        videoClient = video_service.subscribe("python_client", resolution, colorSpace, 5)
+                t1 = time.time()
 
-        t0 = time.time()
+                time_elapsed = float(t1 - t0)
 
-        # Get a camera image.
-        # image[6] contains the image data passed as an array of ASCII chars.
-        naoImage = video_service.getImageRemote(videoClient)
+                if time_elapsed > 0.0:
+                    fps = math.floor(1/time_elapsed)
 
-        t1 = time.time()
+                # Time the image transfer.
+                print("acquisition delay ", [time_elapsed, fps])
 
-        # Time the image transfer.
-        print("acquisition delay ", t1 - t0)
+                if pepperImage is not None:
+                    # Get the image size and pixel array.
+                    imageWidth = pepperImage[0]
+                    imageHeight = pepperImage[1]
+                    img_array = pepperImage[6]
+                    img_str = str(bytearray(img_array))
+                    
+                    # video_service.releaseImage(videoClient)
 
+                    # # Reshape array to show the image 
+                    nparr = np.fromstring(img_str, np.uint8)
+                    img_np = nparr.reshape(((imageHeight, imageWidth, 3))).astype(np.uint8)
+
+                    scale_percent = 300 # percent of original size
+                    width = int(img_np.shape[1] * scale_percent / 100)
+                    height = int(img_np.shape[0] * scale_percent / 100)
+                    dim = (width, height)
+
+                    # resize image
+                    img_np = cv2.resize(img_np, dim, interpolation = cv2.INTER_AREA)
+
+                    # Write FPS on the
+                    cv2.putText(img_np, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
+
+                    # # Show the image with cv2
+                    cv2.imshow("Pepper camera", img_np)
+                    key = cv2.waitKey(1)
+                    # If user press Esc, exit from the loop
+                    if key == 27:
+                        userWantsToExit = False
+
+            # Unsubscribe from the video service
+            video_service.unsubscribe(videoClient)
+
+        else: 
+            print("Video client not found.")
+    except KeyboardInterrupt:
+        # Unsubscribe from the video service
         video_service.unsubscribe(videoClient)
-
-
-        # Now we work with the image returned and save it as a PNG  using ImageDraw
-        # package.
-
-        # Get the image size and pixel array.
-        imageWidth = naoImage[0]
-        imageHeight = naoImage[1]
-        array = naoImage[6]
-        image_string = str(bytearray(array))
-
-        # Create a PIL Image from our pixel array.
-        im = Image.frombytes("RGB", (imageWidth, imageHeight), image_string)
-
-        # Save the image.
-        # im.save("camImage.png", "PNG")
-
-        im.show()
-        time.sleep(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -70,4 +105,4 @@ if __name__ == "__main__":
         print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
                "Please check your script arguments. Run with -h option for help.")
         sys.exit(1)
-    main(session)
+    main(session, args.ip, args.port)
