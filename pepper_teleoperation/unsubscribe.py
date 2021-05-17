@@ -2,7 +2,6 @@ import qi
 import argparse
 import sys
 import time
-import cv2
 import numpy as np
 import math
 from naoqi import ALProxy
