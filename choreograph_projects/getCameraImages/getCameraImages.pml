@@ -402,6 +402,14 @@
         <File name="WHEEL" src="libs/Pillow-6.2.2.dist-info/WHEEL" />
         <File name="top_level" src="libs/Pillow-6.2.2.dist-info/top_level.txt" />
         <File name="zip-safe" src="libs/Pillow-6.2.2.dist-info/zip-safe" />
+        <File name="AUTHORS" src="libs/pyzmq-19.0.2.dist-info/AUTHORS.md" />
+        <File name="COPYING" src="libs/pyzmq-19.0.2.dist-info/COPYING.BSD" />
+        <File name="COPYING" src="libs/pyzmq-19.0.2.dist-info/COPYING.LESSER" />
+        <File name="INSTALLER" src="libs/pyzmq-19.0.2.dist-info/INSTALLER" />
+        <File name="METADATA" src="libs/pyzmq-19.0.2.dist-info/METADATA" />
+        <File name="RECORD" src="libs/pyzmq-19.0.2.dist-info/RECORD" />
+        <File name="WHEEL" src="libs/pyzmq-19.0.2.dist-info/WHEEL" />
+        <File name="top_level" src="libs/pyzmq-19.0.2.dist-info/top_level.txt" />
     </Resources>
     <Topics />
     <IgnoredPaths />

@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" ?><ChoregrapheProject xmlns="http://www.aldebaran-robotics.com/schema/choregraphe/project.xsd" xar_version="3"><Box name="root" id="-1" localization="8" tooltip="Root box of Choregraphe&apos;s behavior. Highest level possible." x="0" y="0"><bitmap>media/images/box/root.png</bitmap><script language="4"><content><![CDATA[]]></content></script><Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" /><Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" /><Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" /><Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" /><Timeline enable="0"><BehaviorLayer name="behavior_layer1"><BehaviorKeyframe name="keyframe1" index="1"><Diagram><Box name="retrieveCameraImages" id="1" localization="8" tooltip="" x="287" y="310"><bitmap>media/images/box/box-python-script.png</bitmap><script language="4"><content><![CDATA[
-
 class MyClass(GeneratedClass):
     def __init__(self):
         GeneratedClass.__init__(self)
@@ -7,11 +6,14 @@ class MyClass(GeneratedClass):
     def onLoad(self):
         #put initialization code here
         import sys
-        import StringIO
-        sys.path.append("/data/home/nao/.local/share/PackageManager/apps/getcameraimage/libs")
-        from PIL import Image
+        import zlib
+        import socket
 
-        print("Imported!")
+        # sys.path.append("/data/home/nao/.local/share/PackageManager/apps/getcameraimage/libs")
+        # from PIL import Image
+
+        # print("Imported!")
+
         pass
 
     def onUnload(self):
@@ -20,47 +22,65 @@ class MyClass(GeneratedClass):
 
     def onInput_onStart(self):
         """
-        First get an image, then compress it with PIL.
+        First get an image, then compress it and send it via UDP.
         """
+
+        # UDP IP and Port to send images
+        UDP_IP = "130.251.13.123"
+        UDP_PORT = 5005
+
         # Get the service ALVideoDevice.
-
         video_service = ALProxy("ALVideoDevice")
-        resolution = 2    # VGA
-        colorSpace = 11   # RGB
+        resolution = 2    # VGA (640x480)
+        colorSpace = 13   # BGR
+        fps = 20
 
-        videoClient = video_service.subscribe("python_client", resolution, colorSpace, 5)
+        videoClient = video_service.subscribe("python_client", resolution, colorSpace, fps)
 
         t0 = time.time()
 
-        # Get a camera image.
-        # image[6] contains the image data passed as an array of ASCII chars.
-        naoImage = video_service.getImageLocal(videoClient)
+        # Initialize socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
 
-        t1 = time.time()
+        while True:
+            # Get a camera image.
+            # image[6] contains the image data passed as an array of ASCII chars.
+            naoImage = video_service.getImageLocal(videoClient)
 
-        # Time the image transfer.
-        print "acquisition delay ", t1 - t0
+            t1 = time.time()
 
-        video_service.unsubscribe(videoClient)
+            # video_service.unsubscribe(videoClient)
 
+            # Now we work with the image returned and save it as a PNG  using ImageDraw
+            # package.
 
-        # Now we work with the image returned and save it as a PNG  using ImageDraw
-        # package.
+            # Get the image size and pixel array.
+            imageWidth = naoImage[0]
+            imageHeight = naoImage[1]
+            array = naoImage[6]
 
-        # Get the image size and pixel array.
-        imageWidth = naoImage[0]
-        imageHeight = naoImage[1]
-        array = naoImage[6]
-        image_string = str(bytearray(array))
+            # Release image
+            video_service.releaseImage(videoClient)
 
-        # Compress image
-        buffer = StringIO.StringIO()
-        image_string.save(buffer, "JPEG", quality=10)
+            # image_string = str(bytearray(array))
+            image_bytes = bytearray(array)
+            # Compress the image
+            z = zlib.compress(image_bytes)
+
+            # try to send via UDP socket
+            try:
+                sock.sendto(z, (UDP_IP, UDP_PORT))
+
+            except Exception as e:
+                print(e)
+                sys.exit(-1)
 
         # Create a PIL Image from our pixel array.
-        im = Image.fromstring("RGB", (imageWidth, imageHeight), buffer)
+        # im = Image.fromstring("RGB", (imageWidth, imageHeight), buffer)
 
-        print("Image compressed!")
+        # Compress image
+        # buffer = StringIO.StringIO()
+        # im.save(buffer, "JPEG", quality=10)
 
         #self.onStopped() #activate the output of the box
         pass

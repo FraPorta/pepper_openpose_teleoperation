@@ -391,8 +391,8 @@ def main(session, ip_addr, port, show_plot):
             fractionMaxSpeed_elbows = 0.15
             fractionMaxSpeed_hip = 0.1
 
-            Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) 
-            All joints with the same speed
+            # Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) 
+            # All joints with the same speed
             if names and angles and time_elapsed > 2.0:
                 motion_service.setAngles(names, angles, fractionMaxSpeed)
                 motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
