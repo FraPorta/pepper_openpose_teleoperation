@@ -1,6 +1,0 @@
-<!-- in qiproject.xml -->
-<project version="3">
-  <qipython name="first_app">
-    <script src="myservice.py" />
-  </qipython>
-</project>

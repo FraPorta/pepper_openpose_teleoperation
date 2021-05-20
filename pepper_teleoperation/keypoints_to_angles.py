@@ -249,37 +249,37 @@ class KeypointsToAngles:
         
         return HipPitch
     
-    def obtain_HeadYaw_angles(self, P0, P1):
-        # print(P0)
-        # print(P1)
+    # def obtain_HeadYaw_angles(self, P0, P1):
+    #     # print(P0)
+    #     # print(P1)
 
-        # Calculate vector
-        v_1_0 = self.vector_from_points(P1, P0)
-        # print(v_1_0)
-        # Normals to axis planes
-        n_YZ = [1, 0, 0]
-        n_XZ = [0, 1, 0]
-        n_XY = [0, 0, 1]
+    #     # Calculate vector
+    #     v_1_0 = self.vector_from_points(P1, P0)
+    #     # print(v_1_0)
+    #     # Normals to axis planes
+    #     n_YZ = [1, 0, 0]
+    #     n_XZ = [0, 1, 0]
+    #     n_XY = [0, 0, 1]
 
-        # Project vector on XZ plane
-        v_1_0_proj = v_1_0 - np.dot(v_1_0, n_XZ)
-        print(v_1_0_proj)
-        # Calculate HeadYaw module
-        omega_HEY_module = np.pi - np.arccos((np.dot(v_1_0_proj, n_XY)) / (np.linalg.norm(v_1_0_proj) * np.linalg.norm(n_XY)))
+    #     # Project vector on XZ plane
+    #     v_1_0_proj = v_1_0 - np.dot(v_1_0, n_XZ)
+    #     print(v_1_0_proj)
+    #     # Calculate HeadYaw module
+    #     omega_HEY_module = np.pi - np.arccos((np.dot(v_1_0_proj, n_XY)) / (np.linalg.norm(v_1_0_proj) * np.linalg.norm(n_XY)))
 
-        # Intermediate vector and angle to calculate positive or negative pich
-        intermediate_angle = np.arccos(np.dot(v_1_0_proj, n_YZ) / (np.linalg.norm(v_1_0_proj) * np.linalg.norm(n_YZ)))
+    #     # Intermediate vector and angle to calculate positive or negative pich
+    #     intermediate_angle = np.arccos(np.dot(v_1_0_proj, n_YZ) / (np.linalg.norm(v_1_0_proj) * np.linalg.norm(n_YZ)))
 
-        # print("Module: %f" % (omega_HEY_module * 180/np.pi))
-        # print("IA: %f" % (intermediate_angle * 180/np.pi))
+    #     # print("Module: %f" % (omega_HEY_module * 180/np.pi))
+    #     # print("IA: %f" % (intermediate_angle * 180/np.pi))
 
-        # Choose positive or negative Yaw angle
-        if intermediate_angle > np.pi/2:
-            HeadYaw = omega_HEY_module 
-        else:
-            HeadYaw = -omega_HEY_module  
+    #     # Choose positive or negative Yaw angle
+    #     if intermediate_angle > np.pi/2:
+    #         HeadYaw = omega_HEY_module 
+    #     else:
+    #         HeadYaw = -omega_HEY_module  
         
-        return HeadYaw
+    #     return HeadYaw
 
 
     ## function invert_right_left
@@ -335,7 +335,7 @@ class KeypointsToAngles:
             HEY = ['0', '1']
 
             # Init angles
-            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = HeadYaw = None
+            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
 
             # Receive keypoints from socket
             wp_dict = self.sr.receive_keypoints()
@@ -347,12 +347,12 @@ class KeypointsToAngles:
             if all (body_part in wp_dict for body_part in HP):
                 HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]))
             
-            # HeadYaw angles 
-            if all (body_part in wp_dict for body_part in HEY):
-                HeadYaw = self.obtain_HeadYaw_angles(wp_dict.get(HEY[0]), wp_dict.get(HEY[1]))
-                # Print angles
-                print("HeadYaw:")
-                print((HeadYaw * 180 )/ np.pi)
+            # # HeadYaw angles 
+            # if all (body_part in wp_dict for body_part in HEY):
+            #     HeadYaw = self.obtain_HeadYaw_angles(wp_dict.get(HEY[0]), wp_dict.get(HEY[1]))
+            #     # Print angles
+            #     print("HeadYaw:")
+            #     print((HeadYaw * 180 )/ np.pi)
 
             # LShoulder angles 
             if all (body_part in wp_dict for body_part in LS):        
@@ -399,7 +399,7 @@ class KeypointsToAngles:
                 # print("RElbowRoll:")
                 # print((RElbowRoll * 180)/ np.pi)
             
-            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw
+            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
                 
                 
         except Exception as e:

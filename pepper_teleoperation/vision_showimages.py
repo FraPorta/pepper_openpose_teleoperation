@@ -10,6 +10,8 @@ import math
 from naoqi import ALProxy
 import vision_definitions
 
+
+
 def main(session, ip_addr, port):
     try:
         """
@@ -19,14 +21,14 @@ def main(session, ip_addr, port):
         video_service = session.service("ALVideoDevice")
 
         cameraID = 0   # Top Camera
-        resolution = vision_definitions.kQQVGA  # 320 * 240
+        resolution = vision_definitions.kQVGA  # 320 * 240
         colorSpace = vision_definitions.kBGRColorSpace
         # colorSpace = vision_definitions.kYUV422ColorSpace
         
-        fps = 20
+        fps = 5
         
         videoClient = video_service.subscribe("python_client", resolution, colorSpace, fps)
-        print(videoClient)
+        print "Client name: ", videoClient
         if videoClient != '':
             video_service.setParam(vision_definitions.kCameraSelectID, cameraID)
 
@@ -34,6 +36,9 @@ def main(session, ip_addr, port):
             while not userWantsToExit:
                 t0 = time.time()
 
+                # x = threading.Thread(target=thread_function, args=(video_service, t0, videoClient))
+                # x.start()
+                
                 # Get a camera image.
                 # image[6] contains the image data passed as an array of ASCII chars.
                 pepperImage = video_service.getImageRemote(videoClient)
@@ -43,10 +48,12 @@ def main(session, ip_addr, port):
                 time_elapsed = float(t1 - t0)
 
                 if time_elapsed > 0.0:
-                    fps = math.floor(1/time_elapsed)
+                    fps = 1/time_elapsed
 
                 # Time the image transfer.
-                print("acquisition delay ", [time_elapsed, fps])
+                print "Fps: %.2f" % fps
+
+                # video_service.releaseImage(videoClient)
 
                 if pepperImage is not None:
                     # Get the image size and pixel array.
@@ -55,13 +62,13 @@ def main(session, ip_addr, port):
                     img_array = pepperImage[6]
                     img_str = str(bytearray(img_array))
                     
-                    # video_service.releaseImage(videoClient)
+                    video_service.releaseImage(videoClient)
 
                     # # Reshape array to show the image 
                     nparr = np.fromstring(img_str, np.uint8)
                     img_np = nparr.reshape(((imageHeight, imageWidth, 3))).astype(np.uint8)
 
-                    scale_percent = 300 # percent of original size
+                    scale_percent = 200 # percent of original size
                     width = int(img_np.shape[1] * scale_percent / 100)
                     height = int(img_np.shape[0] * scale_percent / 100)
                     dim = (width, height)
@@ -70,7 +77,7 @@ def main(session, ip_addr, port):
                     img_np = cv2.resize(img_np, dim, interpolation = cv2.INTER_AREA)
 
                     # Write FPS on the
-                    cv2.putText(img_np, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
+                    # cv2.putText(img_np, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
 
                     # # Show the image with cv2
                     cv2.imshow("Pepper camera", img_np)
@@ -92,7 +99,7 @@ def main(session, ip_addr, port):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.154",
+    parser.add_argument("--ip", type=str, default="130.251.13.120",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")

@@ -1,7 +1,4 @@
-#! /usr/bin/env python
 # -*- encoding: UTF-8 -*-
-
-"""Example: Use setAngles and setStiffnesses Methods"""
 
 import qi
 from naoqi import ALProxy
@@ -393,7 +390,7 @@ def main(session, ip_addr, port, show_plot):
 
             # Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) 
             # All joints with the same speed
-            if names and angles and time_elapsed > 2.0:
+            if names and angles and time_elapsed > 1.0:
                 motion_service.setAngles(names, angles, fractionMaxSpeed)
                 motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
 
@@ -446,7 +443,7 @@ def main(session, ip_addr, port, show_plot):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.154",
+    parser.add_argument("--ip", type=str, default="130.251.13.120",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")
