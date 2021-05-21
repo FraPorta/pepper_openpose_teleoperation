@@ -41,14 +41,22 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
     elif LSR > 1.5620:
         LShoulderRoll = 1.5620
         
+    # # LElbowYaw saturation
+    # if LEY is None:
+    #     LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Actuator/Value")
+    #     # print("LEY")
+    # elif LEY < -2.0857:
+    #     LElbowYaw = -2.0857
+    # elif LEY > 2.0857:
+    #     LElbowYaw = 2.0857
     # LElbowYaw saturation
     if LEY is None:
         LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Actuator/Value")
         # print("LEY")
-    elif LEY < -2.0857:
-        LElbowYaw = -2.0857
-    elif LEY > 2.0857:
-        LElbowYaw = 2.0857
+    elif LEY < -2.0857*0.5:
+        LElbowYaw = -2.0857*0.5
+    elif LEY > 2.0857*0.5:
+        LElbowYaw = 2.0857*0.5
 
     # LElbowRoll saturation
     if LER is None:
@@ -58,7 +66,6 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
         LElbowRoll = -1.5620
     elif LER > -0.0087:
         LElbowRoll = -0.0087
-
 
     ## RIGHT ##
 
@@ -84,10 +91,10 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
     if REY is None:
         RElbowYaw = mProxy.getData("Device/SubDeviceList/RElbowYaw/Position/Actuator/Value")
         # print("REY")
-    elif REY < -2.0857:
-        RElbowYaw = -2.0857
-    elif REY > 2.0857:
-        RElbowYaw = 2.0857
+    elif REY < -2.0857*0.5:
+        RElbowYaw = -2.0857*0.5
+    elif REY > 2.0857*0.5:
+        RElbowYaw = 2.0857*0.5
 
     # RElbowRoll saturation
     if RER is None:
@@ -115,22 +122,6 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
     #     HeadYaw = -2.0857
     # elif HEY > 2.0857:
     #     HeadYaw = 2.0857
-
-    
-def update_arr(arr, angle, window_length):
-
-    # Temporary array to save data
-    temp = np.zeros(window_length + 1)
-
-    # Update last 6 values array
-    for i in range(0,window_length-1):
-        temp[i] = arr[i+1]
-        
-    temp[window_length] = angle
-
-    arr = temp.copy()
-
-    return arr
 
 ## function plot_data
 #
@@ -211,14 +202,12 @@ def main(session, ip_addr, port, show_plot):
 
     # motion_service.setStiffnesses("HeadYaw", stiffness)
 
-
-    # print("Is tracking enabled?", faceProxy.isTrackingEnabled())
+    # # Face tracking
+    # # print("Is tracking enabled?", faceProxy.isTrackingEnabled())
     # # Enable face tracking
     # faceProxy.setRecognitionEnabled(False)
     # faceProxy.enableTracking(True)
     # # faceProxy.setTrackingEnabled(True)
-
-    # print("Is tracking enabled?", faceProxy.isTrackingEnabled())
 
     # # Subscribe to the ALFaceDetection proxy
     # # This means that the module will write in ALMemory with
@@ -443,7 +432,7 @@ def main(session, ip_addr, port, show_plot):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.120",
+    parser.add_argument("--ip", type=str, default="130.251.13.102",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")

@@ -81,20 +81,20 @@
     PEPPER <--------- (UDP + RTP jpeg payload encoding) -----------> PC_HOST
     Front camera:
     ```bash
-    gst-launch-0.10 -v v4l2src device=/dev/video0 ! 'video/x-raw-yuv,width=640, height=480,framerate=30/1' ! ffmpegcolorspace ! jpegenc ! rtpjpegpay ! udpsink host=PC_HOST port=3000
+    gst-launch-0.10 -v v4l2src device=/dev/video0 ! 'video/x-raw-yuv,width=640, height=480,framerate=30/1' ! ffmpegcolorspace ! jpegenc, quality=10 ! rtpjpegpay ! udpsink host=PC_HOST port=3000
     ```
     Bottom camera:
     ```bash
-    gst-launch-0.10 -v v4l2src device=/dev/video1 ! 'video/x-raw-yuv,width=640, height=480,framerate=30/1' ! ffmpegcolorspace ! jpegenc ! rtpjpegpay ! udpsink host=PC_HOST port=3001
+     gst-launch-0.10 -v v4l2src device=/dev/video1 ! 'video/x-raw-yuv,width=640, height=480,framerate=5/1' ! ffmpegcolorspace ! jpegenc, quality=10 ! rtpjpegpay ! udpsink host=PC_HOST port=3001
     ```
 * On Windows PowerShell run:
     To visualize the front camera:
     ```bash
-    .\gst-launch-1.0 -v udpsrc port=3000 caps="application/x-rtp, encoding-name=(string)JPEG,payload=26" ! rtpjpegdepay ! jpegdec ! autovideosink sync=f
+    .\gst-launch-1.0 -v udpsrc port=3000 caps="application/x-rtp, encoding-name=(string)JPEG, payload=26" ! rtpjpegdepay ! jpegdec ! autovideosink sync=f
     ```
     Bottom camera:
     ```bash
-    .\gst-launch-1.0 -v udpsrc port=3001 caps="application/x-rtp, encoding-name=(string)JPEG,payload=26" ! rtpjpegdepay ! jpegdec ! autovideosink sync=f
+    .\gst-launch-1.0 -v udpsrc port=3001 caps="application/x-rtp, encoding-name=(string)JPEG, payload=26" ! rtpjpegdepay ! jpegdec ! autovideosink sync=f
     ```
 
 

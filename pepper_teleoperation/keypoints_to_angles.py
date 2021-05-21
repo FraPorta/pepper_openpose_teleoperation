@@ -3,6 +3,7 @@ import sys
 from socket_receive import SocketReceive
 
 import numpy as np
+import math
 
 class KeypointsToAngles:
     # Body parts associated to their index
@@ -73,11 +74,21 @@ class KeypointsToAngles:
         # R_left_torso = np.cross(v_8_1, n_8_1_5)
         R_left_torso = np.cross(n_8_1_5, v_8_1) # Left-right arm inverted
 
+        x = np.dot(v_5_6, v_8_1) / (np.linalg.norm(v_5_6))*(np.linalg.norm(v_8_1))
         # Intermediate angle to calculate positive or negative final Pitch angle
-        intermediate_angle = np.arccos(np.dot(v_5_6, v_8_1) / (np.linalg.norm(v_5_6))*(np.linalg.norm(v_8_1)))
+        try:
+            intermediate_angle = math.acos(x)
+        except ValueError:
+            intermediate_angle = np.pi/2
+        # intermediate_angle = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
         
         # Module of the LShoulderPitch angle
-        theta_LSP_module = np.arccos(np.dot(v_8_1, np.cross(R_left_torso, v_5_6))/(np.linalg.norm(v_8_1) * np.linalg.norm(np.cross(R_left_torso, v_5_6))))
+        x = np.dot(v_8_1, np.cross(R_left_torso, v_5_6))/(np.linalg.norm(v_8_1) * np.linalg.norm(np.cross(R_left_torso, v_5_6))) 
+        try:
+            theta_LSP_module = math.acos(x)
+        except ValueError:
+            theta_LSP_module = 0
+        # theta_LSP_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
         # Positive or negative LShoulderPitch
         if intermediate_angle <= np.pi/2 :
@@ -87,8 +98,13 @@ class KeypointsToAngles:
     
         # Formula for LShoulderRoll
         # LShoulderRoll = (np.pi/2) - np.arccos((np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso)))
-        LShoulderRoll =  np.arccos((np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso))) - (np.pi/2) # Left-right arm inverted
-
+        x = (np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso))
+        try:
+            LShoulderRoll = math.acos(x) - (np.pi/2)
+        except ValueError:
+            LShoulderRoll = 0
+        # LShoulderRoll =  np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) - (np.pi/2) # Left-right arm inverted
+        
         # Return LShoulder angles
         return LShoulderPitch, LShoulderRoll
     
@@ -113,10 +129,20 @@ class KeypointsToAngles:
         # n_1_2_3 = np.cross(v_2_3, v_2_1)
 
         # Module of the RShoulderPitch angle
-        theta_RSP_module = np.arccos(np.dot(v_8_1, np.cross(R_right_torso, v_2_3))/(np.linalg.norm(v_8_1) * np.linalg.norm(np.cross(R_right_torso, v_2_3))))
+        x = np.dot(v_8_1, np.cross(R_right_torso, v_2_3))/(np.linalg.norm(v_8_1) * np.linalg.norm(np.cross(R_right_torso, v_2_3)))
+        try:
+            theta_RSP_module = math.acos(x)
+        except ValueError:
+            theta_RSP_module = 0
+        # theta_RSP_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
         
         # Intermediate angle to calculate positive or negative final Pitch angle
-        intermediate_angle = np.arccos(np.dot(v_2_3, v_8_1) / (np.linalg.norm(v_2_3))*(np.linalg.norm(v_8_1)))
+        x = np.dot(v_2_3, v_8_1) / (np.linalg.norm(v_2_3))*(np.linalg.norm(v_8_1))
+        try:
+            intermediate_angle = math.acos(x)
+        except ValueError:
+            intermediate_angle = np.pi/2
+        # intermediate_angle = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
 
         # Positive or negative RShoulderPitch
         if intermediate_angle <= np.pi/2 :
@@ -126,7 +152,12 @@ class KeypointsToAngles:
 
         # Formula for RShoulderRoll
         # RShoulderRoll =  (np.pi/2) - np.arccos((np.dot(v_2_3, R_right_torso)) / (np.linalg.norm(v_2_3) * np.linalg.norm(R_right_torso))) 
-        RShoulderRoll =  np.arccos((np.dot(v_2_3, R_right_torso)) / (np.linalg.norm(v_2_3) * np.linalg.norm(R_right_torso))) - (np.pi/2) # Left-right arm inverted
+        x = (np.dot(v_2_3, R_right_torso)) / (np.linalg.norm(v_2_3) * np.linalg.norm(R_right_torso))
+        try:
+            RShoulderRoll = math.acos(x) - (np.pi/2)
+        except ValueError:
+            RShoulderRoll = np.pi/2
+        # RShoulderRoll =  np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) - (np.pi/2) # Left-right arm inverted
 
         # Return RShoulder angles
         return RShoulderPitch, RShoulderRoll
@@ -151,11 +182,27 @@ class KeypointsToAngles:
         n_5_6_7 = np.cross(v_6_5, v_6_7) 
 
         # Formula to calculate the module of LElbowYaw angle
-        theta_LEY_module = np.arccos(np.dot(n_1_5_6, n_5_6_7) / (np.linalg.norm(n_1_5_6) * np.linalg.norm(n_5_6_7))) 
+        x = np.dot(n_1_5_6, n_5_6_7) / (np.linalg.norm(n_1_5_6) * np.linalg.norm(n_5_6_7))
+        try:
+            theta_LEY_module = math.acos(x)
+        except ValueError:
+            theta_LEY_module = 0
+        # theta_LEY_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) 
 
         # Intermediate angles to choose the right LElbowYaw angle
-        intermediate_angle_1 = np.arccos(np.dot(v_6_7, n_1_5_6) / (np.linalg.norm(v_6_7) * np.linalg.norm(n_1_5_6)))
-        intermediate_angle_2 = np.arccos(np.dot(v_6_7, R_left_arm) / (np.linalg.norm(v_6_7) * np.linalg.norm(R_left_arm)))
+        x = np.dot(v_6_7, n_1_5_6) / (np.linalg.norm(v_6_7) * np.linalg.norm(n_1_5_6))
+        try:
+            intermediate_angle_1 = math.acos(x)
+        except ValueError:
+            intermediate_angle_1 = np.pi/2
+        # intermediate_angle_1 = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
+
+        x = np.dot(v_6_7, R_left_arm) / (np.linalg.norm(v_6_7) * np.linalg.norm(R_left_arm))
+        try:
+            intermediate_angle_2 = math.acos(x)
+        except ValueError:
+            intermediate_angle_2 = np.pi/2
+        # intermediate_angle_2 = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
 
         # Choice of the correct LElbowYaw angle using intermediate angles values
         if intermediate_angle_1 <= np.pi/2:
@@ -167,7 +214,12 @@ class KeypointsToAngles:
                 LElbowYaw = theta_LEY_module - (2 * np.pi)
 
         # Formula for LElbowRoll angle
-        LElbowRoll = np.arccos(np.dot(v_6_7, v_6_5) / (np.linalg.norm(v_6_7) * np.linalg.norm(v_6_5))) - np.pi
+        x = np.dot(v_6_7, v_6_5) / (np.linalg.norm(v_6_7) * np.linalg.norm(v_6_5))
+        try:
+            LElbowRoll = math.acos(x) - np.pi
+        except ValueError:
+            LElbowRoll = 0
+        # LElbowRoll = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) - np.pi
         
         # Return LElbow angles
         return LElbowYaw, LElbowRoll
@@ -196,17 +248,30 @@ class KeypointsToAngles:
 
 
         # Formula to calculate the module of RElbowYaw angle
-        theta_REY_module = np.arccos(np.dot(n_1_2_3, n_2_3_4) / (np.linalg.norm(n_1_2_3) * np.linalg.norm(n_2_3_4)))
+        x = np.dot(n_1_2_3, n_2_3_4) / np.linalg.norm(n_1_2_3) * np.linalg.norm(n_2_3_4)
+
+        try:
+            theta_REY_module = math.acos(x)
+        except ValueError:
+            theta_REY_module = 0
+        # theta_REY_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
         # Intermediate angles to choose the right RElbowYaw angle
-        intermediate_angle_1 = np.arccos(np.dot(v_3_4, n_1_2_3) / (np.linalg.norm(v_3_4) * np.linalg.norm(n_1_2_3)))
-        intermediate_angle_2 = np.arccos(np.dot(v_3_4, R_right_arm) / (np.linalg.norm(v_3_4) * np.linalg.norm(R_right_arm)))
+        x = np.dot(v_3_4, n_1_2_3) / (np.linalg.norm(v_3_4) * np.linalg.norm(n_1_2_3))
+        try:
+            intermediate_angle_1 = math.acos(x)
+        except ValueError:
+            intermediate_angle_1 =  np.pi/2
+        # intermediate_angle_1 = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
 
-        # # Choice of the correct RElbowYaw angle using intermediate angles values
-        # print("Module REY: %f" % theta_REY_module)
-        # print("IntANg1: %f" % intermediate_angle_1)
-        # print("IntANg2: %f" % intermediate_angle_2)
+        x = np.dot(v_3_4, R_right_arm) / (np.linalg.norm(v_3_4) * np.linalg.norm(R_right_arm))
+        try:
+            intermediate_angle_2 = math.acos(x)
+        except ValueError:
+            intermediate_angle_2 =  np.pi/2
+        # intermediate_angle_2 = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
 
+        # Choice of the correct RElbowYaw angle using intermediate angles values
         if intermediate_angle_1 <= np.pi/2:
             RElbowYaw = theta_REY_module
         else:
@@ -217,7 +282,12 @@ class KeypointsToAngles:
                 RElbowYaw = theta_REY_module - (2 * np.pi)
             
         # Formula for RElbowRoll angle
-        RElbowRoll = np.pi - np.arccos(np.dot(v_3_4, v_3_2) / (np.linalg.norm(v_3_4) * np.linalg.norm(v_3_2)))
+        x = np.dot(v_3_4, v_3_2) / (np.linalg.norm(v_3_4) * np.linalg.norm(v_3_2))
+        try:
+            RElbowRoll =  np.pi - math.acos(x)
+        except ValueError:
+            RElbowRoll =  0
+        # RElbowRoll = np.pi - np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
@@ -236,10 +306,20 @@ class KeypointsToAngles:
 
         # Calculate HipPitch module
         # omega_HP_module = np.arccos((np.dot(v_0_8_prev_proj, v_0_8_curr_proj))/(np.linalg.norm(v_0_8_prev_proj) * np.linalg.norm(v_0_8_curr_proj)))
-        omega_HP_module = np.arccos((np.dot(n_XZ, v_0_8_curr_proj))/(np.linalg.norm(n_XZ) * np.linalg.norm(v_0_8_curr_proj)))
+        x = (np.dot(n_XZ, v_0_8_curr_proj))/(np.linalg.norm(n_XZ) * np.linalg.norm(v_0_8_curr_proj))
+        try:
+            omega_HP_module =  math.acos(x)
+        except ValueError:
+            omega_HP_module =  0
+        # omega_HP_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
         # Intermediate vector and angle to calculate positive or negative pich
-        intermediate_angle = np.arccos(np.dot(v_0_8_curr_proj, n_XY) / (np.linalg.norm(v_0_8_curr_proj) * np.linalg.norm(n_XY)))
+        x = np.dot(v_0_8_curr_proj, n_XY) / (np.linalg.norm(v_0_8_curr_proj) * np.linalg.norm(n_XY))
+        try:
+            intermediate_angle =  math.acos(x)
+        except ValueError:
+            intermediate_angle =  0
+        # intermediate_angle = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
         # Choose positive or negative pitch angle
         if intermediate_angle > np.pi/2:
