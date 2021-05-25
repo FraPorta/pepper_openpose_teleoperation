@@ -50,6 +50,7 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
     # elif LEY > 2.0857:
     #     LElbowYaw = 2.0857
     # LElbowYaw saturation
+    
     if LEY is None:
         LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Actuator/Value")
         # print("LEY")
