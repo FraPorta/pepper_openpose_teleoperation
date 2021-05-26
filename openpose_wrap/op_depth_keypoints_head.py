@@ -109,10 +109,10 @@ def get_head_pose(image_points, model_points, size=[1080,1920] ):
     # (success, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_P3P)
 
 
-    (success, rotation_vector, translation_vector, inliers) = cv2.solvePnPRansac(model_points, image_points, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_AP3P)
+    (success, rotation_vector, translation_vector ) = cv2.solveP3P(model_points, image_points, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_AP3P)
     
     if success:
-        return rotation_vector
+        return rotation_vector, translation_vector
     else:
         return None
 
@@ -208,35 +208,47 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
                                 world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
                                 wp_dict[i] = world_point
                                 
-                                if i == 0 or i in range(15,19):
+                                if i == 0 or i in range(15,17):
+                                # if i == 0 or i in range(15,19):
                                     color_dict[i] = color_point
                                     head_dict[i] = world_point
                                     
         # Get head keypoints for head pose
-        # head_dict = {key: wp_dict[key] for key in head_keys}
         if color_dict and head_dict:
-            if len(color_dict) > 4:
-                if 17 in color_dict:
-                    del color_dict[17]
-                    del head_dict[17]
-                elif 18 in color_dict:
-                    del color_dict[18]
-                    del head_dict[18]
+            # print("Color points: ", color_dict)
+            # print("World points: ", head_dict )
+            
+            # if len(color_dict) > 4:
+            #     if 17 in color_dict:
+            #         del color_dict[17]
+            #         del head_dict[17]
+            #     elif 18 in color_dict:
+            #         del color_dict[18]
+            #         del head_dict[18]
                     
-            if len(color_dict) == 4:   
+            if len(color_dict) == 3:   
                 image_points = np.array(list(color_dict.values()), dtype=np.double)
                 model_points = np.array(list(head_dict.values()))
                 try:
-                    head_pose = get_head_pose(image_points, model_points)
-                    
-                    if head_pose is not None:
-                        print("Head pose: ", head_pose*180/np.pi)
-                        wp_dict[20] = [float(head_pose[0]), float(head_pose[1]), float(head_pose[1])] 
+                    # Extract head Rotation vector from keypoints 
+                    rotationVector, translation_vec = get_head_pose(image_points, model_points)
+                    # print(rotationVector)
+                    if rotationVector is not None:
+                        
+                        # Get Euler angles
+                        rmat, jac = cv2.Rodrigues(rotationVector[0])
+                        angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
+                        print("Angles ", angles)
+                        # print("Head pose: ", rotationVector[0] * 180/np.pi)
+                        
+                        # Add head yaw pitch and roll to the keypoints dictionary
+                        wp_dict[20] = [float(rotationVector[0][0]), float(rotationVector[0][1]), float(rotationVector[0][2])] 
+                         
                 except cv2.error as e:
                     print(e)
                 
                 
-        # if more than three keypoints are detcted as occluded, it may be that the user
+        # if more than three keypoints are detected as occluded, it may be that the user
         # moved his whole body from one frame to another, so we reset the depth values dictionary 
         if ko_count > 3:
             dv_previous = {}
@@ -272,10 +284,10 @@ try:
         # Windows Import
         if platform == "win32":
             # Change these variables to point to the correct folder (Release/x64 etc.)
-            # sys.path.append(home + '/openpose/build/python/openpose/Release');
-            sys.path.append(home + '/Downloads/openpose/build/python/openpose/Release'); # MSI
-            # os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/openpose/build/x64/Release;' +  home + '/openpose/build/bin;'
-            os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/Downloads/openpose/build/x64/Release;' +  home + '/Downloads/openpose/build/bin;' # MSI
+            sys.path.append(home + '/openpose/build/python/openpose/Release');
+            # sys.path.append(home + '/Downloads/openpose/build/python/openpose/Release'); # MSI
+            os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/openpose/build/x64/Release;' +  home + '/openpose/build/bin;'
+            # os.environ['PATH']  = os.environ['PATH'] + ';' + home + '/Downloads/openpose/build/x64/Release;' +  home + '/Downloads/openpose/build/bin;' # MSI
             import pyopenpose as op
         else:
             # Change these variables to point to the correct folder (Release/x64 etc.)
@@ -295,9 +307,9 @@ try:
     # Custom Params (refer to include/openpose/flags.hpp for more parameters)
     params = dict()
     # Change path to point to the models folder 
-    params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
-    # params["model_folder"] = home + '/openpose/models/'
-    params["net_resolution"] = "-1x192"         # select net resolution (necessary for low end graphic cards)
+    # params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
+    params["model_folder"] = home + '/openpose/models/'
+    # params["net_resolution"] = "-1x192"         # select net resolution (necessary for low end graphic cards)
     # params["face"] = "true"
     # params["face_net_resolution"] = "240x240"
     # params["hand"] = "true"

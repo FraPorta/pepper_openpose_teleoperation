@@ -84,7 +84,7 @@ print( "Camera Matrix :\n {0}".format(camera_matrix))
 
 dist_coeffs = np.zeros((4,1)) # Assuming no lens distortion
 
-# (success, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_ITERATIVE)
+(success, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_ITERATIVE)
 
 
 print ("Rotation Vector:\n {0}".format(rotation_vector))

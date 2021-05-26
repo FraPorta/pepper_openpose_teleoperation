@@ -12,14 +12,14 @@ import matplotlib.pyplot as plt
 
 from keypoints_to_angles import KeypointsToAngles 
 
-LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
+LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = HeadYaw = HeadPitch = None
 # session = None
 
 ## function saturate_angles
 #
 # Saturate angles before using them for controlling Pepper joints
-def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
-    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
+def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP, HEY, HEP):
+    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch
 
     ## LEFT ##
     
@@ -115,14 +115,25 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
     elif HP > 1.0385:
         HipPitch = 1.0385
     
-    # # HeadYaw saturation: -2.0857 to 2.0857
-    # if HEY is None:
-    #     HeadYaw = mProxy.getData("Device/SubDeviceList/HeadYaw/Position/Actuator/Value")
-    #     # print("RER")
-    # elif HEY < -2.0857:
-    #     HeadYaw = -2.0857
-    # elif HEY > 2.0857:
-    #     HeadYaw = 2.0857
+    # HeadYaw saturation: -2.0857 to 2.0857
+    limit = 0.4
+    if HEY is None:
+        HeadYaw = mProxy.getData("Device/SubDeviceList/HeadYaw/Position/Actuator/Value")
+        # print("RER")
+    elif HEY < -2.0857*limit:
+        HeadYaw = -2.0857*limit
+    elif HEY > 2.0857*limit:
+        HeadYaw = 2.0857*limit
+    
+    # HeadPitch saturation: -0.7068 to 0.4451
+    if HEP is None:
+        HeadPitch = mProxy.getData("Device/SubDeviceList/HeadPitch/Position/Actuator/Value")
+        # print("RER")
+    elif HEP < -0.7068:
+        HeadPitch = -0.7068
+    elif HEP > 0.4451:
+        HeadPitch = 0.4451 
+    
 
 ## function plot_data
 #
@@ -167,7 +178,7 @@ def main(session, ip_addr, port, show_plot):
     in order to perform reactive control on Pepper upper body.
     """
 
-    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
+    global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch
 
     # Get the services ALMotion and ALRobotPosture
     motion_service  = session.service("ALMotion")
@@ -186,7 +197,7 @@ def main(session, ip_addr, port, show_plot):
     posture_service.goToPosture("StandInit", 0.5)
 
     # Set stiffness of the interested joints
-    stiffness = 0.5
+    stiffness = 1
     motion_service.setStiffnesses("LShoulderPitch", stiffness)
     motion_service.setStiffnesses("LShoulderRoll",  stiffness)
 
@@ -200,14 +211,19 @@ def main(session, ip_addr, port, show_plot):
     motion_service.setStiffnesses("RElbowRoll", stiffness)
 
     motion_service.setStiffnesses("HipPitch", stiffness)
+    motion_service.setStiffnesses("HeadYaw", stiffness)
+    motion_service.setStiffnesses("HeadPitch", stiffness)
 
+    # Set initial pitch angles
+    motion_service.setAngles("HeadPitch", 0.0 , 0.1)
+    
     # motion_service.setStiffnesses("HeadYaw", stiffness)
 
     # # Face tracking
     # # print("Is tracking enabled?", faceProxy.isTrackingEnabled())
-    # # Enable face tracking
-    # faceProxy.setRecognitionEnabled(False)
-    # faceProxy.enableTracking(True)
+    # Disable face tracking
+    faceProxy.setRecognitionEnabled(False)
+    faceProxy.enableTracking(False)
     # # faceProxy.setTrackingEnabled(True)
 
     # # Subscribe to the ALFaceDetection proxy
@@ -236,18 +252,6 @@ def main(session, ip_addr, port, show_plot):
 
     b, a = signal.butter(order, normal_cutoff, btype='low', analog=False, output='ba') 
 
-    # # Plot the frequency response of the filter
-    # w, h = signal.freqz(b, a)
-    # plt.subplot(2, 1, 1)
-    # plt.plot(0.5*fs*w/np.pi, np.abs(h), 'b')
-    # plt.plot(cutoff, 0.5*np.sqrt(2), 'ko')
-    # plt.axvline(cutoff, color='k')
-    # plt.xlim(0, 0.5*fs)
-    # plt.title("Lowpass Filter Frequency Response")
-    # plt.xlabel('Frequency [Hz]')
-    # plt.grid()
-    # plt.show()
-
     # Initialize filters for each angle
     z_LSP = signal.lfilter_zi(b, a)   
     z_LSR = signal.lfilter_zi(b, a)   
@@ -257,10 +261,13 @@ def main(session, ip_addr, port, show_plot):
     z_RSP = signal.lfilter_zi(b, a)   
     z_RSR = signal.lfilter_zi(b, a)   
     z_REY = signal.lfilter_zi(b, a)   
-    z_RER = signal.lfilter_zi(b, a)   
+    z_RER = signal.lfilter_zi(b, a)  
     
-    b_HP, a_HP = signal.butter(order, 0.3/nyq, btype='low', analog=False, output='ba') 
+    # Head and Hip filters initialization
+    b_HP, a_HP = signal.butter(4, 0.5/nyq, btype='low', analog=False, output='ba') 
     z_HP = signal.lfilter_zi(b_HP, a_HP)   
+    z_HEY = signal.lfilter_zi(b_HP, a_HP)   
+    z_HEP = signal.lfilter_zi(b_HP, a_HP)   
 
     # Initialize arrays to store angles for plots
     # Left arm
@@ -284,6 +291,11 @@ def main(session, ip_addr, port, show_plot):
     # Hip
     HP_arr = []
     HP_arr_filt = []
+    # Head
+    HEY_arr = []
+    HEY_arr_filt = []
+    HEP_arr = []
+    HEP_arr_filt = []
 
     # Initialize time counter
     t1 = time.time()
@@ -301,10 +313,10 @@ def main(session, ip_addr, port, show_plot):
             angles = []
 
             # Get angles from keypoints
-            LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch = KtA.get_angles()
+            LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch = KtA.get_angles()
 
             # Saturate angles to avoid exceding Pepper limits
-            saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch)
+            saturate_angles(memProxy, LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch)
             
             if show_plot:
                 # Update lists for plots
@@ -319,6 +331,9 @@ def main(session, ip_addr, port, show_plot):
                 RER_arr.append(RElbowRoll)
 
                 HP_arr.append(HipPitch)
+                HEY_arr.append(HeadYaw)
+                HEP_arr.append(HeadPitch)
+                
 
             ### DATA REAL-TIME FILTERING ###
             # Filter data with Butterworth filter
@@ -333,6 +348,8 @@ def main(session, ip_addr, port, show_plot):
             RElbowRoll, z_RER = signal.lfilter(b, a, [RElbowRoll], zi=z_RER)
 
             HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [HipPitch], zi=z_HP)
+            HeadYaw, z_HEY = signal.lfilter(b_HP, a_HP, [HeadYaw], zi=z_HEY)
+            HeadPitch, z_HEP = signal.lfilter(b_HP, a_HP, [HeadPitch], zi=z_HEP)
             
             if show_plot:
                 # Store filtered angles for plots
@@ -347,6 +364,8 @@ def main(session, ip_addr, port, show_plot):
                 RER_arr_filt.append(RElbowRoll)
                 
                 HP_arr_filt.append(HipPitch)
+                HEY_arr_filt.append(HeadYaw)
+                HEP_arr_filt.append(HeadPitch)
             
             ### Pepper joints control ###
             # Both shoulders
@@ -358,12 +377,12 @@ def main(session, ip_addr, port, show_plot):
             angles_elbows = [float(LElbowYaw), float(LElbowRoll), float(RElbowYaw), float(RElbowRoll)]
 
             # HipPitch
-            names_hip = ["HipPitch"]
-            angles_hip = [float(HipPitch)]
+            names_hip_head = ["HipPitch", "HeadYaw", "HeadPitch"]
+            angles_hip_head = [float(HipPitch), float(HeadYaw), float(HeadPitch)]
 
-            # # HeadYaw
-            # names_hey = ["HeadYaw"]
-            # angles_hey = [float(HeadYaw)]
+            # HeadYaw
+            names_hey = ["HeadYaw"]
+            angles_hey = [float(HeadYaw)]
 
             # Arms 
             names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
@@ -376,20 +395,23 @@ def main(session, ip_addr, port, show_plot):
 
             fractionMaxSpeed_shoulders = 0.15
             fractionMaxSpeed_elbows = 0.15
-            fractionMaxSpeed_hip = 0.1
+            fractionMaxSpeed_hip_head = 0.125
 
-            # Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) 
-            # All joints with the same speed
-            if names and angles and time_elapsed > 1.0:
-                motion_service.setAngles(names, angles, fractionMaxSpeed)
-                motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
+            # # Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) 
+            # # All joints with the same speed
+            # if names and angles and names_hip_head and angles_hip_head and time_elapsed > 1.0:
+            #     motion_service.setAngles(names, angles, fractionMaxSpeed)
+            #     motion_service.setAngles(names_hip_head, angles_hip_head, fractionMaxSpeed_hip_head)
 
             # Different joints have different speeds
             # if names_shoulders and angles_shoulders and names_elbows and angles_elbows and time_elapsed > 2.0:
                 
             #     motion_service.setAngles(names_shoulders, angles_shoulders, fractionMaxSpeed_shoulders)
             #     motion_service.setAngles(names_elbows, angles_elbows, fractionMaxSpeed_elbows)
-            #     motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip)
+            #     motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_hip_head)
+            
+            if names_hey and angles_hey and time_elapsed > 2.0:
+                motion_service.setAngles(names_hey, angles_hey, fractionMaxSpeed_hip_head)
             
             time_elapsed = time.time() - t1
             # print(time_elapsed)
@@ -406,21 +428,23 @@ def main(session, ip_addr, port, show_plot):
         except KeyboardInterrupt:
             if show_plot:
                 # Create figure with 9 subplots
-                fig, axs = plt.subplots(3,3)
+                fig, axs = plt.subplots(3,4)
                 fig.suptitle('Joints angles over time')
 
                 # Plot joint angles
                 plot_data(axs, LSP_arr, LSP_arr_filt, 'LSP', time_elapsed, pos_x=0, pos_y=0)
                 plot_data(axs, LSR_arr, LSR_arr_filt, 'LSR', time_elapsed, pos_x=0, pos_y=1)
                 plot_data(axs, LEY_arr, LEY_arr_filt, 'LEY', time_elapsed, pos_x=0, pos_y=2)
-                plot_data(axs, LER_arr, LER_arr_filt, 'LER', time_elapsed, pos_x=1, pos_y=0)
+                plot_data(axs, LER_arr, LER_arr_filt, 'LER', time_elapsed, pos_x=0, pos_y=3)
 
-                plot_data(axs, RSP_arr, RSP_arr_filt, 'RSP', time_elapsed, pos_x=1, pos_y=1)
-                plot_data(axs, RSR_arr, RSR_arr_filt, 'RSR', time_elapsed, pos_x=1, pos_y=2)
-                plot_data(axs, REY_arr, REY_arr_filt, 'REY', time_elapsed, pos_x=2, pos_y=0)
-                plot_data(axs, RER_arr, RER_arr_filt, 'RER', time_elapsed, pos_x=2, pos_y=1)
+                plot_data(axs, RSP_arr, RSP_arr_filt, 'RSP', time_elapsed, pos_x=1, pos_y=0)
+                plot_data(axs, RSR_arr, RSR_arr_filt, 'RSR', time_elapsed, pos_x=1, pos_y=1)
+                plot_data(axs, REY_arr, REY_arr_filt, 'REY', time_elapsed, pos_x=1, pos_y=2)
+                plot_data(axs, RER_arr, RER_arr_filt, 'RER', time_elapsed, pos_x=1, pos_y=3)
 
-                plot_data(axs, HP_arr,  HP_arr_filt,  'HP',  time_elapsed, pos_x=2, pos_y=2)
+                plot_data(axs, HP_arr,  HP_arr_filt,  'HP',  time_elapsed, pos_x=2, pos_y=0)
+                plot_data(axs, HEY_arr, HEY_arr_filt, 'HEY', time_elapsed, pos_x=2, pos_y=1)
+                plot_data(axs, HEP_arr, HEP_arr_filt, 'HEP', time_elapsed, pos_x=2, pos_y=2)
 
                 # Show plot
                 plt.show()
@@ -433,7 +457,7 @@ def main(session, ip_addr, port, show_plot):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.102",
+    parser.add_argument("--ip", type=str, default="130.251.13.144",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")
