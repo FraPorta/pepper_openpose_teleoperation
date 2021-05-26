@@ -215,7 +215,7 @@ def main(session, ip_addr, port, show_plot):
     motion_service.setStiffnesses("HeadPitch", stiffness)
 
     # Set initial pitch angles
-    motion_service.setAngles("HeadPitch", 0.0 , 0.1)
+    motion_service.setAngles("HeadPitch", -0.5 , 0.1)
     
     # motion_service.setStiffnesses("HeadYaw", stiffness)
 
@@ -264,7 +264,7 @@ def main(session, ip_addr, port, show_plot):
     z_RER = signal.lfilter_zi(b, a)  
     
     # Head and Hip filters initialization
-    b_HP, a_HP = signal.butter(4, 0.5/nyq, btype='low', analog=False, output='ba') 
+    b_HP, a_HP = signal.butter(4, 0.7/nyq, btype='low', analog=False, output='ba') 
     z_HP = signal.lfilter_zi(b_HP, a_HP)   
     z_HEY = signal.lfilter_zi(b_HP, a_HP)   
     z_HEP = signal.lfilter_zi(b_HP, a_HP)   
@@ -457,7 +457,7 @@ def main(session, ip_addr, port, show_plot):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.144",
+    parser.add_argument("--ip", type=str, default="130.251.13.129",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")

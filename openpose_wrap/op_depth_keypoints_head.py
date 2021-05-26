@@ -395,7 +395,7 @@ try:
                     fps = math.floor(1/float(time_elapsed))
 
                     # Map color space keypoints to depth space 
-                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, display=True)
+                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, display=False)
 
                     # Display OpenPose output image
                     userWantsToExit = display(datum, fps, frame)
