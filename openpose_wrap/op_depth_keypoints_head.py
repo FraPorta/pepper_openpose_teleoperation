@@ -149,7 +149,6 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         dv_dict = {}
         ko_count = 0
         
-        head_keys = ['0','15','16','17','18']
         head_dict = {}
         color_dict = {}
         
@@ -165,7 +164,7 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         
         # proceed only if a person was detected
         if body_keypoints is not None:
-            for i in range(0,19): # extract only the needed depth points (upper body limbs)
+            for i in range(0,17): # extract only the needed depth points (upper body limbs)
                 if i not in range(9,15): # don't extract leg keypoints
                     x = body_keypoints[0,i,0]
                     y = body_keypoints[0,i,1]
@@ -174,8 +173,8 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
                     color_point = [int(x),int(y)]
                     
                     # check if the keypoint was detected (or the score is sufficiently high)
-                    if color_point[0] > 0 and color_point[1] > 0 and score > 0.6: 
-                    
+                    # if color_point[0] > 0 and color_point[1] > 0 and score > 0.6: 
+                    if color_point[0] > 0 and color_point[1] > 0:
                         # map color point to correspondent depth point  
                         depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
                         
@@ -215,17 +214,6 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
                                     
         # Get head keypoints for head pose
         if color_dict and head_dict:
-            # print("Color points: ", color_dict)
-            # print("World points: ", head_dict )
-            
-            # if len(color_dict) > 4:
-            #     if 17 in color_dict:
-            #         del color_dict[17]
-            #         del head_dict[17]
-            #     elif 18 in color_dict:
-            #         del color_dict[18]
-            #         del head_dict[18]
-                    
             if len(color_dict) == 3:   
                 image_points = np.array(list(color_dict.values()), dtype=np.double)
                 model_points = np.array(list(head_dict.values()))
@@ -236,9 +224,9 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
                     if rotationVector is not None:
                         
                         # Get Euler angles
-                        rmat, jac = cv2.Rodrigues(rotationVector[0])
-                        angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
-                        print("Angles ", angles)
+                        # rmat, jac = cv2.Rodrigues(rotationVector[0])
+                        # angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
+                        # print("Angles ", angles)
                         # print("Head pose: ", rotationVector[0] * 180/np.pi)
                         
                         # Add head yaw pitch and roll to the keypoints dictionary
@@ -395,7 +383,7 @@ try:
                     fps = math.floor(1/float(time_elapsed))
 
                     # Map color space keypoints to depth space 
-                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, display=False)
+                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, display=True)
 
                     # Display OpenPose output image
                     userWantsToExit = display(datum, fps, frame)

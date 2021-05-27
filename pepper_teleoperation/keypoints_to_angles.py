@@ -385,7 +385,7 @@ class KeypointsToAngles:
             RE = ['1','2','3','4']   
 
             # HipPitch needed keypoints
-            HP = ['0', '8']
+            HP = ['1', '8']
 
             # HeadYaw and Pitch id
             HYP = '20'
@@ -409,8 +409,8 @@ class KeypointsToAngles:
             if HYP in wp_dict:
                 HeadYaw, HeadPitch = self.obtain_HeadYawPitch_angles(wp_dict.get(HYP))
                 # # Print angles
-                print("HeadYaw: ", (HeadYaw * 180 )/ np.pi)
-                print("HeadPitch: ", (HeadPitch * 180 )/ np.pi)
+                # print("HeadYaw: ", (HeadYaw * 180 )/ np.pi)
+                # print("HeadPitch: ", (HeadPitch * 180 )/ np.pi)
 
 
             # LShoulder angles 
