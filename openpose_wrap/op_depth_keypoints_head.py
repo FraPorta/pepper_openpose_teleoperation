@@ -308,7 +308,7 @@ try:
     # params["process_real_time"] = "true"
     params["net_resolution_dynamic"] = "0"      # recommended 1 for small GPUs (to avoid out of memory"" 
                                                 # errors but maximize speed) and 0 for big GPUs (for maximum accuracy and speed).");
-                                                
+                                                                                            
     # Add others in path?
     for i in range(0, len(args[1])):
         curr_item = args[1][i]

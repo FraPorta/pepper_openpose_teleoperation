@@ -41,16 +41,6 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP, HEY, HEP
         LShoulderRoll = 0.0087
     elif LSR > 1.5620:
         LShoulderRoll = 1.5620
-        
-    # # LElbowYaw saturation
-    # if LEY is None:
-    #     LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Actuator/Value")
-    #     # print("LEY")
-    # elif LEY < -2.0857:
-    #     LElbowYaw = -2.0857
-    # elif LEY > 2.0857:
-    #     LElbowYaw = 2.0857
-    # LElbowYaw saturation
     
     if LEY is None:
         LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Actuator/Value")
@@ -107,14 +97,14 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP, HEY, HEP
     elif RER > 1.5620:
         RElbowRoll = 1.5620
 
-    # HipPitch saturation: -1.0385 to 1.0385
-    if HP is None:
-        HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Actuator/Value")
-        # print("RER")
-    elif HP < -1.0385:
-        HipPitch = -1.0385
-    elif HP > 1.0385:
-        HipPitch = 1.0385
+    # # HipPitch saturation: -1.0385 to 1.0385
+    # if HP is None:
+    #     HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Actuator/Value")
+    #     # print("RER")
+    # elif HP < -1.0385:
+    #     HipPitch = -1.0385
+    # elif HP > 1.0385:
+    #     HipPitch = 1.0385
     
     # HeadYaw saturation: -2.0857 to 2.0857
     limit = 0.5
@@ -146,14 +136,14 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP, HEY, HEP
     #     HeadYaw = -1.0
         
 
-    # # HeadPitch saturation: -0.7068 to 0.4451
-    # if HEP is None:
-    #     HeadPitch = mProxy.getData("Device/SubDeviceList/HeadPitch/Position/Actuator/Value")
-    #     # print("RER")
-    # elif HEP < -0.7068:
-    #     HeadPitch = -0.7068
-    # elif HEP > 0.4451:
-    #     HeadPitch = 0.4451 
+    # HeadPitch saturation: -0.7068 to 0.4451
+    if HEP is None:
+        HeadPitch = mProxy.getData("Device/SubDeviceList/HeadPitch/Position/Actuator/Value")
+        # print("RER")
+    elif HEP < -0.7068:
+        HeadPitch = -0.7068
+    elif HEP > 0.4451:
+        HeadPitch = 0.4451 
     
 
 ## function plot_data
@@ -232,11 +222,11 @@ def main(session, ip_addr, port, show_plot):
     motion_service.setStiffnesses("RElbowYaw", stiffness)
     motion_service.setStiffnesses("RElbowRoll", stiffness)
 
-    motion_service.setStiffnesses("HipPitch", stiffness)
+    # motion_service.setStiffnesses("HipPitch", stiffness)
     motion_service.setStiffnesses("HeadYaw", stiffness)
-    motion_service.setStiffnesses("HeadPitch", 0.0)
+    motion_service.setStiffnesses("HeadPitch", stiffness)
 
-    # Set initial pitch angle
+    # Set head pitch angle (fixed)
     motion_service.setAngles("HeadPitch", -0.3 , 0.5)
     
     # motion_service.setStiffnesses("HeadYaw", stiffness)
@@ -358,7 +348,7 @@ def main(session, ip_addr, port, show_plot):
             RElbowYaw, z_REY = signal.lfilter(b, a, [RElbowYaw], zi=z_REY)
             RElbowRoll, z_RER = signal.lfilter(b, a, [RElbowRoll], zi=z_RER)
 
-            HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [HipPitch], zi=z_HP)
+            # HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [HipPitch], zi=z_HP)
             HeadYaw, z_HEY = signal.lfilter(b_HP, a_HP, [HeadYaw], zi=z_HEY)
             # HeadPitch, z_HEP = signal.lfilter(b_HP, a_HP, [HeadPitch], zi=z_HEP)
             
@@ -381,32 +371,32 @@ def main(session, ip_addr, port, show_plot):
                 HEP_arr_filt.append(HeadPitch)
             
             ### Pepper joints control ###
-            # Both shoulders
-            names_shoulders = ["LShoulderPitch","LShoulderRoll","RShoulderPitch","RShoulderRoll"]
-            angles_shoulders = [float(LShoulderPitch), float(LShoulderRoll), float(RShoulderPitch), float(RShoulderRoll)]
+            # # Both shoulders
+            # names_shoulders = ["LShoulderPitch","LShoulderRoll","RShoulderPitch","RShoulderRoll"]
+            # angles_shoulders = [float(LShoulderPitch), float(LShoulderRoll), float(RShoulderPitch), float(RShoulderRoll)]
 
-            # Both elbows
-            names_elbows = ["LElbowYaw", "LElbowRoll","RElbowYaw","RElbowRoll"]
-            angles_elbows = [float(LElbowYaw), float(LElbowRoll), float(RElbowYaw), float(RElbowRoll)]
+            # # Both elbows
+            # names_elbows = ["LElbowYaw", "LElbowRoll","RElbowYaw","RElbowRoll"]
+            # angles_elbows = [float(LElbowYaw), float(LElbowRoll), float(RElbowYaw), float(RElbowRoll)]
 
             # # HipPitch
             # names_hip_head = ["HipPitch", "HeadYaw", "HeadPitch"]
             # angles_hip_head = [float(HipPitch), float(HeadYaw), float(HeadPitch)]
 
-            print(HeadYaw)
+            # print(HeadYaw)
             # HeadYaw
             names_hey = ["HeadYaw"]
             angles_hey = [float(HeadYaw)]
 
-            # All 
-            names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
-                     "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll", "HipPitch"]
-            angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll), \
-                      float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll), float(HipPitch)]
+            # Arms 
             # names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
-            #          "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll"]
+            #          "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll", "HipPitch"]
             # angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll), \
-            #           float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll)]
+            #           float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll), float(HipPitch)]
+            names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
+                     "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll"]
+            angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll), \
+                      float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll)]
             
             # Speed limits for the joints
             fractionMaxSpeed = 0.15
