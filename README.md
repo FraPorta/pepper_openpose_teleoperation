@@ -63,12 +63,19 @@
         cd ~/pepper_openpose_teleoperation/openpose_wrap
         python get_and_plot_3Dkeypoints.py
         ```
-* Pepper real-time teloperation
+* Pepper real-time teleoperation
     * Open another terminal using `Python 2.7 32-bit` (see [miniconda2](https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86.exe))
     * Run `pepper_armsReactiveControl_butter.py` (in `pepper_teleoperation` folder)
         ```bash
         cd ~/pepper_openpose_teleoperation/pepper_teleoperation
         python pepper_armsReactiveControl_butter.py --ip [your_Pepper_ip]
+        ```
+    * Set the flag --show_plots to true if you want to visualize the plots for the controlled joints angles when you stop the script
+* Pepper real-time teleoperation after finding the user and reaching it
+    * Run `pepper_approach_control.py` (in `pepper_teleoperation` folder)
+        ```bash
+        cd ~/pepper_openpose_teleoperation/pepper_teleoperation
+        python pepper_approach_control.py --ip [your_Pepper_ip]
         ```
     * Set the flag --show_plots to true if you want to visualize the plots for the controlled joints angles when you stop the script
 
