@@ -388,11 +388,7 @@ def main(session, ip_addr, port, show_plot):
             names_hey = ["HeadYaw"]
             angles_hey = [float(HeadYaw)]
 
-            # Arms 
-            # names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
-            #          "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll", "HipPitch"]
-            # angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll), \
-            #           float(RShoulderPitch), float(RShoulderRoll), float(RElbowYaw), float(RElbowRoll), float(HipPitch)]
+            # All joints
             names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
                      "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll"]
             angles = [float(LShoulderPitch), float(LShoulderRoll), float(LElbowYaw), float(LElbowRoll), \

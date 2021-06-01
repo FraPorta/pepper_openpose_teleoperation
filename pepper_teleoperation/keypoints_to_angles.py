@@ -292,7 +292,10 @@ class KeypointsToAngles:
 
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
-
+    
+    ## function obtain_HipPitch_angles
+    # 
+    # Calculate right hip pitch angle
     def obtain_HipPitch_angles(self, P0_curr, P8_curr):
         # Calculate vector
         v_0_8_curr = self.vector_from_points(P0_curr, P8_curr)
@@ -323,16 +326,20 @@ class KeypointsToAngles:
         # intermediate_angle = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
         # Choose positive or negative pitch angle
+        correction = 0.25
         if intermediate_angle > np.pi/2:
-            HipPitch = np.pi - omega_HP_module 
+            HipPitch = np.pi - omega_HP_module - correction
         else:
-            HipPitch = omega_HP_module - np.pi
+            HipPitch = omega_HP_module - np.pi - correction
         
         return HipPitch
     
+    ## function obtain_HeadYawPitch_angles
+    #
+    # extract Head pitch and Yaw angles
     def obtain_HeadYawPitch_angles(self, rot_vec):
-        HeadYaw = - rot_vec[2] * 1.1
-        HeadPitch = rot_vec[0] - (np.pi/4 + np.pi/8)
+        HeadYaw = - rot_vec[2] 
+        HeadPitch = rot_vec[0] 
         
         return HeadYaw, HeadPitch
 
@@ -388,9 +395,7 @@ class KeypointsToAngles:
             HP = ['1', '8']
 
             # HeadYaw and Pitch id
-            HYP = '20'
-            
-            
+            HYP = '20'    
 
             # Init angles
             LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = HeadYaw = HeadPitch = None
@@ -408,55 +413,22 @@ class KeypointsToAngles:
             # Head angles 
             if HYP in wp_dict:
                 HeadYaw, HeadPitch = self.obtain_HeadYawPitch_angles(wp_dict.get(HYP))
-                # # Print angles
-                # print("HeadYaw: ", (HeadYaw * 180 )/ np.pi)
-                # print("HeadPitch: ", (HeadPitch * 180 )/ np.pi)
-
 
             # LShoulder angles 
             if all (body_part in wp_dict for body_part in LS):        
                 LShoulderPitch, LShoulderRoll = self.obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
 
-                # # # Print angles
-                # print("LShoulderPitch:")
-                # print((LShoulderPitch * 180 )/ np.pi)
-
-                # print("LShoulderRoll:")
-                # print((LShoulderRoll * 180)/ np.pi)
-
             # LElbow angles (Green arm on OpenPose)
             if all (body_part in wp_dict for body_part in LE):
                 LElbowYaw, LElbowRoll = self.obtain_LElbowYawRoll_angle(wp_dict.get(LE[0]), wp_dict.get(LE[1]), wp_dict.get(LE[2]), wp_dict.get(LE[3]))
-
-                # Print angles
-                # print("LElbowYaw:")
-                # print((LElbowYaw * 180 )/ np.pi)
-
-                # print("LElbowRoll:")
-                # print((LElbowRoll * 180)/ np.pi)
 
             # RShoulder angles
             if all (body_part in wp_dict for body_part in RS):        
                 RShoulderPitch, RShoulderRoll = self.obtain_RShoulderPitchRoll_angle(wp_dict.get(RS[0]), wp_dict.get(RS[1]), wp_dict.get(RS[2]), wp_dict.get(RS[3]))
 
-                # # Print angles
-                # print("RShoulderPitch:")
-                # print((RShoulderPitch * 180 )/ np.pi)
-
-                # print("RShoulderRoll:")
-                # print((RShoulderRoll * 180)/ np.pi)
-
-
             # # RElbow angles
             if all (body_part in wp_dict for body_part in RE):
                 RElbowYaw, RElbowRoll = self.obtain_RElbowYawRoll_angle(wp_dict.get(RE[0]), wp_dict.get(RE[1]), wp_dict.get(RE[2]), wp_dict.get(RE[3]))
-                
-                # Print angles
-                # print("RElbowYaw:")
-                # print((RElbowYaw * 180 )/ np.pi)
-
-                # print("RElbowRoll:")
-                # print((RElbowRoll * 180)/ np.pi)
             
             return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch
                 
