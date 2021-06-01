@@ -3,6 +3,9 @@ import time
 import json
 import sys
 
+## class SocketSend
+#
+# This class creates a ZeroMQ socket to send a Python dictionary over TCP 
 class SocketSend:
     ctx = None
     sock = None
