@@ -54,9 +54,9 @@ depth_fps_counter = 0
 color_fps_counter = 0
 dv_previous = {}
 
-## function checkOcclusion
+##  function checkOcclusion
 #
-# check if a keypoint is occluded by something
+#   check if a keypoint is occluded by something
 def checkOcclusion(bodyPart, prev_depths, current_depth):
     # threshShoulders = 50   # mm
     # threshElbows = 70      # mm
@@ -89,9 +89,9 @@ def checkOcclusion(bodyPart, prev_depths, current_depth):
                     return True
     return False
 
-## function get_head_pose
+##  function get_head_pose
 #
-# calculate head pose using cv2 solvePnP
+#   calculate head pose using cv2 solvePnP
 def get_head_pose(image_points, model_points, size=[1080,1920]):
     # Camera internals
     focal_length = size[1]
@@ -105,6 +105,7 @@ def get_head_pose(image_points, model_points, size=[1080,1920]):
     dist_coeffs = np.zeros((4,1)) # Assuming no lens distortion
     # Works with 4
     # (success, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_P3P)
+    # Get head rotation and translation vector 
     (success, rotation_vector, translation_vector) = cv2.solveP3P(model_points, image_points, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_AP3P)
 
     if success:
@@ -112,9 +113,9 @@ def get_head_pose(image_points, model_points, size=[1080,1920]):
     else:
         return None
 
-## function display
+##  function display
 # 
-# Display OpenPose output image
+#   Display OpenPose output image
 def display(datums, fps, frame):
     #datum = datums[0]
     color_img = datums.cvOutputData
@@ -128,9 +129,9 @@ def display(datums, fps, frame):
     key = cv2.waitKey(1)
     return (key == 27)
 
-## function displayDepthKeypoints
+##  function displayDepthKeypoints
 #
-# display keypoints on depth image and calculate and send the camera frame 3D points to a socket publisher
+#   display keypoints on depth image and calculate and send the camera frame 3D points to a socket publisher
 def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
     global dv_previous
     keypointOccluded = False
@@ -386,24 +387,10 @@ try:
                     
             else:
                 break
-        
+# Catch exceptions    
 except Exception as e:
     print(e)
     exc_type, exc_obj, exc_tb = sys.exc_info()
     print(exc_type, exc_tb.tb_lineno)
     sys.exit(-1)
     
-
-
-'''  
-# Print keypoints with depth errors (0          -> keypoint not detected anymore
-#                                    high value -> background point detcted instead of keypoint)
-# These keypoints were discarded
-if dv_dict.keys() != wp_dict.keys():
-    set_dv = set(dv_dict.keys())
-    set_wp = set(wp_dict.keys())
-    missing_keypoints = set_dv - set_wp
-    missing_keypoints = list(missing_keypoints)
-    for i in missing_keypoints:
-        print("Error detecting %s: depth value %i" % (body_mapping[i], dv_dict.get(i)))
-'''

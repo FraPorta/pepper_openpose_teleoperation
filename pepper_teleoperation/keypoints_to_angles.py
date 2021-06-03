@@ -5,6 +5,9 @@ from socket_receive import SocketReceive
 import numpy as np
 import math
 
+## class KeypointsToAngles
+#
+# This class contains methods to receive 3D keypoints and calculate skeleton joint angles  
 class KeypointsToAngles:
     '''
     # Body parts associated to their index
@@ -19,9 +22,9 @@ class KeypointsToAngles:
                     '8':  "MidHip"}
     '''
 
-    ## method __init__
+    ##  method __init__
     #
-    # Initialization method 
+    #   Initialization method 
     def __init__(self):
         # init start flag
         self.start_flag = True
@@ -31,29 +34,29 @@ class KeypointsToAngles:
 
         print("Start receiving keypoints...")
     
-    ## method __del__
+    ##  method __del__
     #
-    # delete class
+    #   delete class
     def __del__(self):
         self.stop_receiving()
         del self.sr
 
-    ## method stop_receiving
+    ##  method stop_receiving
     #
-    # stop the receive keypoints loop
+    #   stop the receive keypoints loop
     def stop_receiving(self):
         self.start_flag = True
 
-    ## function vector_from_points
+    ##  function vector_from_points
     #
-    # calculate 3D vector from two points ( vector = P2 - P1 )
+    #   calculate 3D vector from two points ( vector = P2 - P1 )
     def vector_from_points(self, P1, P2):
         vector = [P2[0] - P1[0], P2[1] - P1[1], P2[2] - P1[2]]
         return vector
 
-    ## function obtain_LShoulderPitchRoll_angles
+    ##  function obtain_LShoulderPitchRoll_angles
     # 
-    # Calculate left shoulder pitch and roll angles
+    #   Calculate left shoulder pitch and roll angles
     def obtain_LShoulderPitchRoll_angles(self, P1, P5, P6, P8):
         # Construct 3D vectors (bones) from points
         v_1_5 = self.vector_from_points(P1, P5)
@@ -109,9 +112,9 @@ class KeypointsToAngles:
         # Return LShoulder angles
         return LShoulderPitch, LShoulderRoll
     
-    ## function obtain_RShoulderPitchRoll_angles
+    ##  function obtain_RShoulderPitchRoll_angles
     # 
-    # Calculate right shoulder pitch and roll angles
+    #   Calculate right shoulder pitch and roll angles
     def obtain_RShoulderPitchRoll_angle(self, P1, P2, P3, P8):
         # Construct 3D vectors (bones) from points
         v_2_3 = self.vector_from_points(P2, P3)
@@ -163,9 +166,9 @@ class KeypointsToAngles:
         # Return RShoulder angles
         return RShoulderPitch, RShoulderRoll
 
-    ## function obtain_LElbowYawRoll_angle
-    # 
-    # Calculate left elbow yaw and roll angles
+    ##  function obtain_LElbowYawRoll_angle
+    #   
+    #   Calculate left elbow yaw and roll angles
     def obtain_LElbowYawRoll_angle(self, P1, P5, P6, P7):
         # Construct 3D vectors (bones) from points
         v_6_7 = self.vector_from_points(P6, P7)
@@ -226,9 +229,9 @@ class KeypointsToAngles:
         return LElbowYaw, LElbowRoll
 
  
-    ## function obtain_RElbowYawRoll_angle
+    ##  function obtain_RElbowYawRoll_angle
     # 
-    # Calculate right elbow yaw and roll angles
+    #   Calculate right elbow yaw and roll angles
     def obtain_RElbowYawRoll_angle(self, P1, P2, P3, P4):
         # Construct 3D vectors (bones) from points
         v_3_4 = self.vector_from_points(P3, P4)
@@ -293,9 +296,9 @@ class KeypointsToAngles:
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
     
-    ## function obtain_HipPitch_angles
+    ##  function obtain_HipPitch_angles
     # 
-    # Calculate right hip pitch angle
+    #   Calculate right hip pitch angle
     def obtain_HipPitch_angles(self, P0_curr, P8_curr):
         # Calculate vector
         v_0_8_curr = self.vector_from_points(P0_curr, P8_curr)
@@ -334,18 +337,18 @@ class KeypointsToAngles:
         
         return HipPitch
     
-    ## function obtain_HeadYawPitch_angles
+    ##  function obtain_HeadYawPitch_angles
     #
-    # extract Head pitch and Yaw angles
+    #   extract Head pitch and Yaw angles
     def obtain_HeadYawPitch_angles(self, rot_vec):
         HeadYaw = - rot_vec[2] 
         HeadPitch = rot_vec[0] 
         
         return HeadYaw, HeadPitch
 
-    ## function invert_right_left
+    ##  function invert_right_left
     #
-    # Invert left and right arm
+    #   Invert left and right arm
     def invert_right_left(self, wp_dict):
         temp_dict = {}
         # print("1")
@@ -376,6 +379,9 @@ class KeypointsToAngles:
         # print(temp_dict)
         return temp_dict
 
+    ##  method get_angles
+    #
+    #   Get angles from socket and calculate joint angles
     def get_angles(self):
         try:
 
@@ -418,7 +424,7 @@ class KeypointsToAngles:
             if all (body_part in wp_dict for body_part in LS):        
                 LShoulderPitch, LShoulderRoll = self.obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
 
-            # LElbow angles (Green arm on OpenPose)
+            # LElbow angles
             if all (body_part in wp_dict for body_part in LE):
                 LElbowYaw, LElbowRoll = self.obtain_LElbowYawRoll_angle(wp_dict.get(LE[0]), wp_dict.get(LE[1]), wp_dict.get(LE[2]), wp_dict.get(LE[3]))
 
@@ -426,13 +432,13 @@ class KeypointsToAngles:
             if all (body_part in wp_dict for body_part in RS):        
                 RShoulderPitch, RShoulderRoll = self.obtain_RShoulderPitchRoll_angle(wp_dict.get(RS[0]), wp_dict.get(RS[1]), wp_dict.get(RS[2]), wp_dict.get(RS[3]))
 
-            # # RElbow angles
+            # RElbow angles
             if all (body_part in wp_dict for body_part in RE):
                 RElbowYaw, RElbowRoll = self.obtain_RElbowYawRoll_angle(wp_dict.get(RE[0]), wp_dict.get(RE[1]), wp_dict.get(RE[2]), wp_dict.get(RE[3]))
             
             return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch
                 
-                
+        # Catch exceptions
         except Exception as e:
             print(e)
             exc_type, exc_obj, exc_tb = sys.exc_info()

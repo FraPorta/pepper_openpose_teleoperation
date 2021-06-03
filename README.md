@@ -1,6 +1,7 @@
 # Pepper Teleoperation using OpenPose
 ## Description
-
+This repository contains the python code to use the Softbank Robotics Humanoid Robot Pepper to approach a user and then be teleoperated by an operator using Openpose for human pose estimation through the RGB camera of a Kinect v2 and the Kinect Depth Camera to add the third dimension to the estimated skeleton. From the 3D keypoints the joint angles are calculated and used as control input for the robot motors. A real-time butterworth filter is used for smoothing the control signals.
+   
 ## Installation guide
 * OpenPose [prerequisites](https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/doc/installation/1_prerequisites.md):
     * Windows 10 (For this implementation)
@@ -33,7 +34,7 @@
         
         It is recommended to substitute the `PyKinect2.py` and `PyKinectRuntime.py` files in the pykinect2 libraries inside your python installation with the updated ones form the [github repository](https://github.com/Kinect/PyKinect2) because the pip installer is not updated to the last version 
 * Pepper teleoperation
-    * Install `Python 2.7 32-bit` (Recommended: [miniconda2](https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86.exe)
+    * Install `Python 2.7 32-bit` (Recommended: [miniconda2](https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86.exe))
     * Install numpy on Python 2.7
         ```bash
         pip install numpy
@@ -57,27 +58,23 @@
         cd ~/pepper_openpose_teleoperation/openpose_wrap
         python op_depth_keypoints.py
         ```
+
 * To visualize live 3D human pose with `matplotlib`:
     * In another terminal  run `get_and_plot_3Dkeypoints.py` (in `openpose_wrap` folder)
         ```bash
         cd ~/pepper_openpose_teleoperation/openpose_wrap
         python get_and_plot_3Dkeypoints.py
         ```
-* Pepper real-time teleoperation
+
+* Pepper real-time teleoperation after finding and approaching the user 
     * Open another terminal using `Python 2.7 32-bit` (see [miniconda2](https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86.exe))
-    * Run `pepper_armsReactiveControl_butter.py` (in `pepper_teleoperation` folder)
-        ```bash
-        cd ~/pepper_openpose_teleoperation/pepper_teleoperation
-        python pepper_armsReactiveControl_butter.py --ip [your_Pepper_ip]
-        ```
-    * Set the flag --show_plots to true if you want to visualize the plots for the controlled joints angles when you stop the script
-* Pepper real-time teleoperation after finding the user and reaching it
     * Run `pepper_approach_control.py` (in `pepper_teleoperation` folder)
         ```bash
         cd ~/pepper_openpose_teleoperation/pepper_teleoperation
         python pepper_approach_control.py --ip [your_Pepper_ip]
         ```
-    * Set the flag --show_plots to true if you want to visualize the plots for the controlled joints angles when you stop the script
+    * Set the flag `--show_plots` to True if you want to visualize the plots for the controlled joints angles when you stop the script
+    * Set the flag `--approach_user` to False if you only want to teleoperate Pepper without moving it from its position
 
 ## Visualize Pepper cameras
 [Original guide.](https://groups.google.com/g/ros-sig-aldebaran/c/LhmKTxyTn1Y?pli=1)

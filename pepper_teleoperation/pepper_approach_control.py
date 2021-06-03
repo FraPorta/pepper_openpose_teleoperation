@@ -18,9 +18,9 @@ from approach_user import ApproachUser
 LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = HeadYaw = HeadPitch = None
 HEY_arr = HEY_arr_filt = time_elapsed = None
 
-## function saturate_angles
+##  function saturate_angles
 #
-# Saturate angles before using them for controlling Pepper joints
+#   Saturate angles before using them for controlling Pepper joints
 def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP, HEY, HEP):
     global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch
     # limit percentage for some angles 
@@ -131,9 +131,9 @@ def saturate_angles(mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP, HEY, HEP
     #     HeadPitch = 0.4451 
     
 
-## function plot_data
+##  function plot_data
 #
-# Plot raw and filtered angles at the end of the session
+#   Plot raw and filtered angles at the end of the session
 def plot_data(axs, raw_data, filt_data, name, time_elapsed, pos_x, pos_y, plot_PS=False):
     # Plot power spectrum and time signals (Raw and filtered)
     data = np.array(raw_data)
@@ -347,18 +347,6 @@ def joints_control(session, ip_addr, port, show_plot):
                 HEP_arr_filt.append(HeadPitch)
             
             ### Pepper joints control ###
-            # # Both shoulders
-            # names_shoulders = ["LShoulderPitch","LShoulderRoll","RShoulderPitch","RShoulderRoll"]
-            # angles_shoulders = [float(LShoulderPitch), float(LShoulderRoll), float(RShoulderPitch), float(RShoulderRoll)]
-
-            # # Both elbows
-            # names_elbows = ["LElbowYaw", "LElbowRoll","RElbowYaw","RElbowRoll"]
-            # angles_elbows = [float(LElbowYaw), float(LElbowRoll), float(RElbowYaw), float(RElbowRoll)]
-
-            # # HipPitch
-            # names_hip_head = ["HipPitch", "HeadYaw", "HeadPitch"]
-            # angles_hip_head = [float(HipPitch), float(HeadYaw), float(HeadPitch)]
-
             # HeadYaw
             names_hey = ["HeadYaw"]
             if HeadYaw < 0.3 and HeadYaw > -0.3:
@@ -367,22 +355,22 @@ def joints_control(session, ip_addr, port, show_plot):
                 angles_hey = [float(HeadYaw)]
             
             '''
-            # elif HeadYaw >= 0.3 and HeadYaw < 0.7:
-            #     angles_hey = [0.45]
-            # elif HeadYaw >= 0.7 and HeadYaw < 1.0:
-            #     angles_hey = [0.85]
-            # elif HeadYaw >= 1.0 and HeadYaw < 2.0857:
-            #     angles_hey = [1.0]
+            elif HeadYaw >= 0.3 and HeadYaw < 0.7:
+                angles_hey = [0.45]
+            elif HeadYaw >= 0.7 and HeadYaw < 1.0:
+                angles_hey = [0.85]
+            elif HeadYaw >= 1.0 and HeadYaw < 2.0857:
+                angles_hey = [1.0]
             
-            # elif HeadYaw > -0.7 and HeadYaw <= -0.3:
-            #     angles_hey = [-0.45]
-            # elif HeadYaw > -1.0 and HeadYaw <= -0.7:
-            #     angles_hey = [-0.85]
-            # elif HeadYaw > -2.0857 and HeadYaw <= -1.0:
-            #     angles_hey = [-1.0]
+            elif HeadYaw > -0.7 and HeadYaw <= -0.3:
+                angles_hey = [-0.45]
+            elif HeadYaw > -1.0 and HeadYaw <= -0.7:
+                angles_hey = [-0.85]
+            elif HeadYaw > -2.0857 and HeadYaw <= -1.0:
+                angles_hey = [-1.0]
+            
+            print(angles_hey)
             '''
-            
-            # print(angles_hey)
             
             # All joints
             names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
@@ -392,8 +380,6 @@ def joints_control(session, ip_addr, port, show_plot):
             
             # Speed limits for the joints
             fractionMaxSpeed = 0.15
-            fractionMaxSpeed_shoulders = 0.15
-            fractionMaxSpeed_elbows = 0.15
             fractionMaxSpeed_head = 0.15
 
             ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
@@ -401,12 +387,6 @@ def joints_control(session, ip_addr, port, show_plot):
             if time_elapsed > 2.0:
                 motion_service.setAngles(names, angles, fractionMaxSpeed)
                 motion_service.setAngles(names_hey, angles_hey, fractionMaxSpeed_head)
-
-            # # Different joints have different speeds
-            # if names_shoulders and angles_shoulders and names_elbows and angles_elbows and time_elapsed > 2.0:
-                # motion_service.setAngles(names_shoulders, angles_shoulders, fractionMaxSpeed_shoulders)
-                # motion_service.setAngles(names_elbows, angles_elbows, fractionMaxSpeed_elbows)
-                # motion_service.setAngles(names_hip,angles_hip, fractionMaxSpeed_head)
             
             # Update time elapsed
             time_elapsed = time.time() - t1
@@ -448,7 +428,10 @@ def joints_control(session, ip_addr, port, show_plot):
             KtA.stop_receiving()
             # main(session)
             sys.exit(-1)
-               
+            
+##  function approach_user
+#
+#   Pepper searches for a person and then approaches it        
 def approach_user(session):
     # Approach the user
     apar = ""
@@ -473,9 +456,13 @@ if __name__ == "__main__":
                         help="Naoqi port number")
     parser.add_argument("--show_plots", type=bool, default=True,
                         help="Select True if you want to see the plots when you interrupt the script with the keyboard")
+    parser.add_argument("--approach_user", type=bool, default=True,
+                        help="Select True if you want to see the plots when you interrupt the script with the keyboard")
+
 
     args = parser.parse_args()
     show_plot = args.show_plots
+    approach_requested = args.approach_user
     ip_addr = args.ip 
     port = args.port
     session = qi.Session()
@@ -486,14 +473,11 @@ if __name__ == "__main__":
                "Please check your script arguments. Run with -h option for help.")
         sys.exit(1)
     
-    
-    # user_approached = False
-    # Approach the user
-    # user_approached = approach_user(session)
-    
-    while not approach_user(session):
-        time.sleep(1)
-        
+    if approach_requested:
+        # Try to approach the user (repeat until a user is approached)
+        while not approach_user(session):
+            time.sleep(1)
+            
     print("Waiting for keypoints...")
     
     # Start receiving keypoints and controlling Pepper joints

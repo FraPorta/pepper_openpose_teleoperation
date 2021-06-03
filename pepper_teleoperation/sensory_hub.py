@@ -24,17 +24,13 @@ Project:     CARESSES (http://caressesrobot.org/en/)
 '''
 
 from threading import Thread
-# from OpenVokaturi.VocalEmotionEstimatorEngine import VocalEmotionEstimatorEngine
 import time
 import numpy
 import math
 import os
 import json
 import logging
-import cv2
-
-# from ActionsLib.aux_files.go_to.graphnavigation import *
-# import ActionsLib.caressestools.caressestools as caressestools
+# import cv2
 
 log_dud = logging.getLogger('DetectUserDepth')
 
@@ -46,7 +42,7 @@ class DetectUserDepth(Thread):
     user_id = None
     timeout = 20
 
-    # flag to use face recognition or not
+    # Flag to use face recognition or not
     useFaceReco = True
     userApproached = False
 

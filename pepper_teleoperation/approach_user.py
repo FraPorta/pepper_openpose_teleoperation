@@ -22,36 +22,28 @@ Affiliation: Robotics Laboratory, Japan Advanced Institute of Science and Techno
 Project:     CARESSES (http://caressesrobot.org/en/)
 '''
 
+from pepper_teleoperation.pepper_approach_control import approach_user
 from threading import Thread
 
 import time
-import math
 import sys
 sys.path.append("..")
-import numpy
-import os
-import json
 import logging
 
 # local import
 from sensory_hub import DetectUserDepth, Person
-
-# from action import Action
 
 console_outputs = {
     0 : ["Looking for the user...", 0],
     1 : ["User found at: x %f, y %f, z %f. Approaching user...", 0]
 }
 
-## Action "Approach User".
+logger = logging.getLogger("approach_user")
+
+## Class "Approach User".
 #
 #  Pepper moves towards the user.
 #  This action gets information about user's position (x,y,z) from thread DetectUserDepth
-#  To run the action without running cahrim.py:
-#  - comment the import of caressestools
-#  - replace the default value of the "ip" script argument with a string
-#  - run the action from the CAHRIM directory through the command:
-#  python -m ActionsLib.approach_user_Depth --ip <PEPPER-IP>
 class ApproachUser():
 
     ## The constructor.
@@ -85,12 +77,12 @@ class ApproachUser():
         self.sPeoplePerception = session.service("ALPeoplePerception")
         self.sBasicAwareness = session.service("ALBasicAwareness")
         
+        # If Autonomous life is disabled, enable it
         if self.life_service.getState() == "disabled":
             self.life_service.setState("solitary")
         
         # Enable the autonomous abilities
         self.life_service.setAutonomousAbilityEnabled("All", True)
-        # self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
         
         self.using_face_reco = DetectUserDepth.isUsingFaceRecognition()
 

@@ -1,9 +1,11 @@
 import zmq
-import time
 import json
 import socket
 import sys
 
+## class SocketReceive
+#
+# socket to receive keypoints in a dictionary
 class SocketReceive:
     ctx = None
     sock = None
