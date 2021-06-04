@@ -22,7 +22,7 @@ Affiliation: Robotics Laboratory, Japan Advanced Institute of Science and Techno
 Project:     CARESSES (http://caressesrobot.org/en/)
 '''
 
-from pepper_teleoperation.pepper_approach_control import approach_user
+# from pepper_teleoperation.pepper_approach_control import approach_user
 from threading import Thread
 
 import time
@@ -83,21 +83,25 @@ class ApproachUser():
         
         # Enable the autonomous abilities
         self.life_service.setAutonomousAbilityEnabled("All", True)
-        
         self.using_face_reco = DetectUserDepth.isUsingFaceRecognition()
-
+        
+        # Define timeouts
         self.timeout = 5
         self.stop_action_timeout = 4
         self.restored_timeout = DetectUserDepth.timeout
-
+        
+        # Basic awareness settings
         self.sBasicAwareness.setTrackingMode("Head")
+        
+        # People perception settings
+        # self.sPeoplePerception.setFastModeEnabled(True)
+        self.sPeoplePerception.setFastModeEnabled(False)
 
-        self.sPeoplePerception.setFastModeEnabled(True)
         self.sPeoplePerception.setMaximumDetectionRange(5)
         self.sPeoplePerception.setTimeBeforePersonDisappears(self.timeout)
         self.sPeoplePerception.setTimeBeforeVisiblePersonDisappears(self.timeout)
         DetectUserDepth.timeout = self.timeout
-
+        # Motion settings
         self.motion_service.setOrthogonalSecurityDistance(0.10)
         self.motion_service.setTangentialSecurityDistance(0.10)
         
@@ -111,7 +115,9 @@ class ApproachUser():
         try:
             timer_start = time.time()
             action_start_time = time.time()
-        
+
+            # self.sBasicAwareness.pauseAwareness()
+            
             while not self.is_stopped:
                 if time.time() - action_start_time > self.user_not_found_timeout:
                     self.is_stopped = True
@@ -196,8 +202,9 @@ class ApproachUser():
         if (abs(y) < 0.1):
             y = 0
 
-        ky = 0.4
-
+        # ky = 0.4
+        ky = 0.2
+        
         if x == 0:
             vel_x = 0
         elif x <= self.distance + 0.2:
@@ -233,7 +240,6 @@ class ApproachUser():
         self.motion_service.setOrthogonalSecurityDistance(0.2)
         self.motion_service.setTangentialSecurityDistance(0.1)
 
-        # self.life_service.setState("disabled")
         DetectUserDepth.timeout = self.restored_timeout
 
         # Disable some Autonomous Life capabilities
@@ -280,9 +286,6 @@ if __name__ == "__main__":
         print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) + ".\n"
                                                                                               "Please check your script arguments. Run with -h option for help.")
         sys.exit(1)
-
-    # caressestools.Settings.robotIP = args.ip
-    # caressestools.startPepper(session, caressestools.Settings.interactionNode)
     
     # Run Action
     apar = ""

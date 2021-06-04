@@ -449,7 +449,6 @@ def main(session, ip_addr, port, show_plot):
             print(exc_type, exc_tb.tb_lineno)
             # Restart loop
             KtA.stop_receiving()
-            # main(session)
             sys.exit(-1)
                
 

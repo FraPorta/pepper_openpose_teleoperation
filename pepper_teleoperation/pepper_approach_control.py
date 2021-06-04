@@ -181,12 +181,7 @@ def joints_control(session, ip_addr, port, show_plot):
     motion_service  = session.service("ALMotion")
     posture_service = session.service("ALRobotPosture")
 
-    # Get the service ALFaceDetection.
-    # faceProxy = ALProxy("ALFaceDetection", ip_addr, port)
-    faceProxy = session.service("ALFaceDetection")
-
-    # Create proxy on ALMemory
-    # memProxy = ALProxy("ALMemory", ip_addr, port)
+    # Get the service ALMemory
     memProxy = session.service("ALMemory")
     
     # Wake up robot
@@ -215,6 +210,9 @@ def joints_control(session, ip_addr, port, show_plot):
 
     # Set fixed head pitch angle
     motion_service.setAngles("HeadPitch", 0.0 , 0.5)
+    
+    # Disable external collision protection
+    motion_service.setExternalCollisionProtectionEnabled("Arms", False)
     
     # Initialize class KeypointsToAngles
     KtA = KeypointsToAngles()
@@ -353,7 +351,6 @@ def joints_control(session, ip_addr, port, show_plot):
                 angles_hey = [0.0]
             else:
                 angles_hey = [float(HeadYaw)]
-            
             '''
             elif HeadYaw >= 0.3 and HeadYaw < 0.7:
                 angles_hey = [0.45]
@@ -394,7 +391,7 @@ def joints_control(session, ip_addr, port, show_plot):
         # If the user stops the script with CTRL+C, show plots of the joints angles
         except KeyboardInterrupt:
             if show_plot:
-                # Create figure with 9 subplots
+                # Create figure with 12 subplots
                 fig, axs = plt.subplots(3,4)
                 fig.suptitle('Joints angles over time')
 
@@ -454,15 +451,21 @@ if __name__ == "__main__":
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")
-    parser.add_argument("--show_plots", type=bool, default=True,
-                        help="Select True if you want to see the plots when you interrupt the script with the keyboard")
-    parser.add_argument("--approach_user", type=bool, default=True,
-                        help="Select True if you want to see the plots when you interrupt the script with the keyboard")
+    
+    parser.add_argument("--show_plots", type=int, default=1,
+                        help="Select 1 if you want to see the plots when you interrupt the script with the keyboard")
+    
+    parser.add_argument("--approach_user", type=int, default=1,
+                        help="Select 1 if you want Pepper to search and approach a user in the room before teleoperation")
+    parser.add_argument("--approach_only", type=int, default=0,
+                        help="Select 1 if you want Pepper to only search and approach a user in the room without teleoperation")
 
 
     args = parser.parse_args()
-    show_plot = args.show_plots
-    approach_requested = args.approach_user
+    show_plot = bool(args.show_plots)
+    approach_requested = bool(args.approach_user)
+    approach_only = bool(args.approach_only)
+    
     ip_addr = args.ip 
     port = args.port
     session = qi.Session()
@@ -473,15 +476,15 @@ if __name__ == "__main__":
                "Please check your script arguments. Run with -h option for help.")
         sys.exit(1)
     
-    if approach_requested:
-        # Try to approach the user (repeat until a user is approached)
+    # Try to approach the user (repeat until a user is approached)
+    if approach_requested or approach_only:
         while not approach_user(session):
             time.sleep(1)
-            
-    print("Waiting for keypoints...")
     
     # Start receiving keypoints and controlling Pepper joints
-    joints_control(session, ip_addr, port, show_plot)
+    if not approach_only:
+        print("Waiting for keypoints...")
+        joints_control(session, ip_addr, port, show_plot)
         
 
 
