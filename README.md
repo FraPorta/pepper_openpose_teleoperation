@@ -102,6 +102,8 @@ This repository contains the python code to use the Softbank Robotics Humanoid R
     ```
 
 ## Stream mini IP camera
+Pepper cameras are low resolution and streaming video while teleoperating its motors is a challenging task for its hardware, so we decided to install external battery-powered wireless IP cameras to get the live video streaming from Pepper while teleoperating it from another room.
+Another IP camera will be installed on Pepper arm to visualize a more specific part of the scenary  
 * Download [ONFIV Device Manager](https://sourceforge.net/projects/onvifdm/) 
 * Get the rtsp stream URL of your IP camera (rtsp://...) (if it's connected to the same Wi-Fi network of your PC)
 * Download [PMPlayer](https://www.picomixer.com/PMPlayer.html)
