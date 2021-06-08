@@ -101,7 +101,11 @@ This repository contains the python code to use the Softbank Robotics Humanoid R
     .\gst-launch-1.0 -v udpsrc port=3001 caps="application/x-rtp, encoding-name=(string)JPEG, payload=26" ! rtpjpegdepay ! jpegdec ! autovideosink sync=f
     ```
 
-
-
+## Stream mini IP camera
+* Download [ONFIV Device Manager](https://sourceforge.net/projects/onvifdm/) 
+* Get the rtsp stream URL of your IP camera (rtsp://...) (if it's connected to the same Wi-Fi network of your PC)
+* Download [PMPlayer](https://www.picomixer.com/PMPlayer.html)
+* Click on 'Open URL'
+* Insert video stream URL and play
     
    
