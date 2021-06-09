@@ -236,24 +236,23 @@ class KeypointsToAngles:
         # Construct 3D vectors (bones) from points
         v_3_4 = self.vector_from_points(P3, P4)
         v_1_2 = self.vector_from_points(P1, P2)
-        # v_2_3 = self.vector_from_points(P2, P3)
 
         # Left arm Z axis
         v_3_2 = self.vector_from_points(P3, P2)
         # Left arm X axis
-        n_1_2_3 = np.cross(v_3_2, v_1_2)  # -- OUT --
-        # n_1_2_3 = np.cross(v_1_2, v_3_2)    # -- IN --  Right-left arms inverted
+        # n_1_2_3 = np.cross(v_3_2, v_1_2)  # -- OUT --
+        n_1_2_3 = np.cross(v_1_2, v_3_2)    # -- IN --  Right-left arms inverted
         # Left arm Y axis
         R_right_arm = np.cross(v_3_2, n_1_2_3)
 
         # normal to the 2_3_4 plane
-        # n_2_3_4 = np.cross(v_3_2, v_3_4)
-        n_2_3_4 = np.cross(v_3_4, v_3_2)
+        n_2_3_4 = np.cross(v_3_2, v_3_4)
+        # n_2_3_4 = np.cross(v_3_4, v_3_2)
 
 
         # Formula to calculate the module of RElbowYaw angle
-        x = np.dot(n_1_2_3, n_2_3_4) / np.linalg.norm(n_1_2_3) * np.linalg.norm(n_2_3_4)
-
+        x = np.dot(n_1_2_3, n_2_3_4) / (np.linalg.norm(n_1_2_3) * np.linalg.norm(n_2_3_4)
+)
         try:
             theta_REY_module = math.acos(x)
         except ValueError:
@@ -277,14 +276,15 @@ class KeypointsToAngles:
 
         # Choice of the correct RElbowYaw angle using intermediate angles values
         if intermediate_angle_1 <= np.pi/2:
-            RElbowYaw = theta_REY_module
+            RElbowYaw = -theta_REY_module
         else:
             if intermediate_angle_2 > np.pi/2:
-                RElbowYaw = -theta_REY_module
-
+                RElbowYaw = theta_REY_module
             elif intermediate_angle_2 <= np.pi/2:
                 RElbowYaw = theta_REY_module - (2 * np.pi)
-            
+                
+        # print('REY', RElbowYaw) 
+          
         # Formula for RElbowRoll angle
         x = np.dot(v_3_4, v_3_2) / (np.linalg.norm(v_3_4) * np.linalg.norm(v_3_2))
         try:
@@ -329,7 +329,7 @@ class KeypointsToAngles:
         # intermediate_angle = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
         # Choose positive or negative pitch angle
-        correction = 0.25
+        correction = 0.15
         if intermediate_angle > np.pi/2:
             HipPitch = np.pi - omega_HP_module - correction
         else:
