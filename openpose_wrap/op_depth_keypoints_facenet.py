@@ -242,7 +242,7 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
             dv_previous = dv_dict
             
         # Send keypoints to another python script via socket (PUB/SUB)
-            ss.send(wp_dict)
+        ss.send(wp_dict)
 
         if display:
             # Write FPS on image

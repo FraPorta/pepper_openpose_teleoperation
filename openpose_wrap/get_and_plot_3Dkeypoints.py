@@ -27,7 +27,7 @@ try:
         # Receive keypoints from socket
         wp_dict = sr.receive_keypoints()
         # print(wp_dict)
-        if bool(wp_dict):
+        if wp_dict:
             # Extract keypoints from dictionary
             wp_list = list(wp_dict.values())
             wp_keys = list(wp_dict.keys())

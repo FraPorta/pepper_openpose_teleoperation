@@ -45,7 +45,7 @@ class KeypointsToAngles:
     #
     #   stop the receive keypoints loop
     def stop_receiving(self):
-        self.start_flag = True
+        self.start_flag = False
 
     ##  function vector_from_points
     #
@@ -337,22 +337,12 @@ class KeypointsToAngles:
         
         return HipPitch
     
-    ##  function obtain_HeadYawPitch_angles
-    #
-    #   extract Head pitch and Yaw angles
-    def obtain_HeadYawPitch_angles(self, rot_vec):
-        HeadYaw = - rot_vec[2] 
-        HeadPitch = rot_vec[0] 
-        
-        return HeadYaw, HeadPitch
-
+    
     ##  function invert_right_left
     #
     #   Invert left and right arm
     def invert_right_left(self, wp_dict):
         temp_dict = {}
-        # print("1")
-        # print(wp_dict)
 
         if '0' in wp_dict:
             temp_dict['0'] = wp_dict['0']
@@ -373,9 +363,7 @@ class KeypointsToAngles:
             temp_dict['4'] = wp_dict['7']
         if '8' in wp_dict:
             temp_dict['8'] = wp_dict['8']
-        if '20' in wp_dict:
-            temp_dict['20'] = wp_dict['20']
-
+        
         # print(temp_dict)
         return temp_dict
 
@@ -398,13 +386,10 @@ class KeypointsToAngles:
             RE = ['1','2','3','4']   
 
             # HipPitch needed keypoints
-            HP = ['1', '8']
-
-            # HeadYaw and Pitch id
-            HYP = '20'    
+            HP = ['1', '8']    
 
             # Init angles
-            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = HeadYaw = HeadPitch = None
+            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
 
             # Receive keypoints from socket
             wp_dict = self.sr.receive_keypoints()
@@ -415,10 +400,6 @@ class KeypointsToAngles:
             # HipPitch angles 
             if all (body_part in wp_dict for body_part in HP):
                 HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]))
-            
-            # Head angles 
-            if HYP in wp_dict:
-                HeadYaw, HeadPitch = self.obtain_HeadYawPitch_angles(wp_dict.get(HYP))
 
             # LShoulder angles 
             if all (body_part in wp_dict for body_part in LS):        
@@ -436,7 +417,7 @@ class KeypointsToAngles:
             if all (body_part in wp_dict for body_part in RE):
                 RElbowYaw, RElbowRoll = self.obtain_RElbowYawRoll_angle(wp_dict.get(RE[0]), wp_dict.get(RE[1]), wp_dict.get(RE[2]), wp_dict.get(RE[3]))
             
-            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch
+            return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
                 
         # Catch exceptions
         except Exception as e:

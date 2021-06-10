@@ -146,8 +146,8 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         dv_dict = {}
         ko_count = 0
         
-        head_dict = {}
-        color_dict = {}
+        # head_dict = {}
+        # color_dict = {}
         
         # initialize variables
         color_point = [0, 0]
@@ -169,7 +169,7 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
                     
                     color_point = [int(x),int(y)]
                     
-                    # check if the keypoint was detected (or the score is sufficiently high)
+                    # check if the keypoint was detected 
                     # if color_point[0] > 0 and color_point[1] > 0 and score > 0.6: 
                     if color_point[0] > 0 and color_point[1] > 0:
                         # map color point to correspondent depth point  
@@ -204,44 +204,37 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
                                 world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
                                 wp_dict[i] = world_point
                                 
-                                if i == 0 or i in range(15,17):
-                                # if i == 0 or i in range(15,19):
-                                    color_dict[i] = color_point
-                                    head_dict[i] = world_point
+                                # if i == 0 or i in range(15,17):
+                                # # if i == 0 or i in range(15,19):
+                                #     color_dict[i] = color_point
+                                #     head_dict[i] = world_point
                                     
         # Get head keypoints for head pose
-        if color_dict and head_dict:
-            if len(color_dict) == 3:   
-                image_points = np.array(list(color_dict.values()), dtype=np.double)
-                model_points = np.array(list(head_dict.values()))
-                try:
-                    # Extract head Rotation vector from keypoints 
-                    rotationVector, translation_vec = get_head_pose(image_points, model_points)
-                    # print(rotationVector)
-                    if rotationVector is not None:
-                        
-                        # Get Euler angles
-                        # rmat, jac = cv2.Rodrigues(rotationVector[0])
-                        # angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
-                        # print("Angles ", angles)
-                        # print("Head pose: ", rotationVector[0] * 180/np.pi)
-                        
-                        # Add head yaw pitch and roll to the keypoints dictionary
-                        wp_dict[20] = [float(rotationVector[0][0]), float(rotationVector[0][1]), float(rotationVector[0][2])] 
+        # if color_dict and head_dict:
+        #     if len(color_dict) == 3:   
+        #         image_points = np.array(list(color_dict.values()), dtype=np.double)
+        #         model_points = np.array(list(head_dict.values()))
+        #         try:
+        #             # Extract head Rotation vector from keypoints 
+        #             rotationVector, translation_vec = get_head_pose(image_points, model_points)
+        #             # print(rotationVector)
+        #             if rotationVector is not None:
+        #                 # Add head yaw pitch and roll to the keypoints dictionary
+        #                 wp_dict[20] = [float(rotationVector[0][0]), float(rotationVector[0][1]), float(rotationVector[0][2])] 
                          
-                except cv2.error as e:
-                    print(e)
+        #         except cv2.error as e:
+        #             print(e)
                 
                 
         # if more than three keypoints are detected as occluded, it may be that the user
         # moved his whole body from one frame to another, so we reset the depth values dictionary 
         if ko_count > 3:
             dv_previous = {}
-        # Else, save the depth values for the next loop and send the pose
+        # Else, save the depth values for the next loop 
         else:
             dv_previous = dv_dict
             
-        # Send keypoints to another python script via socket (PUB/SUB)
+            # Send keypoints to another python script via socket (PUB/SUB)
             ss.send(wp_dict)
 
         if display:
