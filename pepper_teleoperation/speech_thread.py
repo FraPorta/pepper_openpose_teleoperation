@@ -43,8 +43,7 @@ class SpeechThread(Thread):
                 # instead of `r.recognize_google(audio)`
                 
                 recognized_text = self.r.recognize_google(self.audio)
-                # recognized_text = self.r.recognize_google(self.audio, key="AIzaSyC8zQpT56us7Tus-XCVo_gwq47GpJ0LJr8")
-                # recognized_text = self.r.recognize_google_cloud(self.audio, credentials_json=GOOGLE_CLOUD_SPEECH_CREDENTIALS)
+
             except sr.UnknownValueError:
                 print("Google Speech Recognition could not understand audio")
             except sr.RequestError as e:
