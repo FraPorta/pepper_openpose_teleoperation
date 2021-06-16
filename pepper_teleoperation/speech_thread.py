@@ -8,12 +8,12 @@ import time
 import numpy as np
 
 import speech_recognition as sr
-from speech_to_text import SpeechToText
 from threading import Thread
 
 class SpeechThread(Thread):
     def __init__(self, session):
         self.session = session
+        self.text = None
         
         # Speech recognizer  
         self.r = sr.Recognizer()
@@ -26,9 +26,9 @@ class SpeechThread(Thread):
     
     # Override the run() function of Thread class
     def run(self):
-        text = self.recognize()
-        print(text)
-        self.tts.say(text)
+        self.text = self.recognize()
+        print(self.text)
+        self.tts.say(self.text)
     
     def recognize(self):
         with sr.Microphone() as source:  
@@ -56,7 +56,7 @@ class SpeechThread(Thread):
 # Main initialization
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.119",
+    parser.add_argument("--ip", type=str, default="130.251.13.134",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")
