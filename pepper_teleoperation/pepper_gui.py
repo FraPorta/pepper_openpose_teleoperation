@@ -4,6 +4,8 @@ from speech_thread import SpeechThread
 import argparse
 import qi
 
+from Queue import Queue
+
 class Window1:
     def __init__(self, master, session):
         #create buttons,entries,etc
@@ -11,11 +13,12 @@ class Window1:
         self.session = session
         
         # Instantiate class for speech recognition
-        self.st = SpeechThread(session)
+        self.q = Queue()
+        self.st = SpeechThread(self.session, self.q)
         
         # Master init
         self.master.title("Talk through Pepper")
-        self.master.geometry("960x480")
+        self.master.geometry("800x160")
         self.master.configure(bg='black')
         self.frame = tk.Frame(self.master)
         # Gif init
@@ -26,42 +29,65 @@ class Window1:
         # self.gif.load('GUI_material/voice_rec.jpg')
         
         # Button init
-        self.btn_rec = tk.Button(self.master, text="Start Talking", bg='#d62f2f',fg='white', activebackground='#56aaff',width=20, height=2, command=self.show_gif)        
+        self.btn_rec = tk.Button(self.master, text="Start Talking", bg='#d62f2f',fg='white', activebackground='#56aaff',width=20, height=2, command=self.start_talk)        
         self.btn_rec.pack()
         self.btn_rec.place(x=20,y=40)
         
+        self.btn_stop = tk.Button(self.master, text="Exit", bg='#d62f2f',fg='white', activebackground='#56aaff',width=20, height=2, command=self.stop_thread)        
+        self.btn_stop.pack()
+        self.btn_stop.place(relx=0.75,y=40)
+        
         # Text init
-        self.txt = tk.Text(self.master, bg='black', fg='white')
-        self.txt.place(x=100, y=40)
+        # self.txt = tk.Label(self.master, bg='black', fg='white', height=4, width=50)
+        # self.txt.place(x=400, y=40)
         
         self.frame.pack()
         
-    def show_gif(self):
-        # self.lbl = ImageLabel(self.master)
-        # self.lbl.grid(row=0,column=1,sticky='nwes')
-        # self.lbl.config(width=400, height=600)
-        
         # Start Speech recognition Thread
         self.st.start()
+        
+    ## method stop_thread
+    #
+    #  Stop speech recognition thread and close the window
+    def stop_thread(self):
+        self.st.is_running = False
+        self.st.join()
+        self.master.destroy()
+    
+    ## method start_talk
+    #
+    #  Button callback to start talking
+    def start_talk(self):
         # Show gif
         self.gif.pack()
         self.gif.place(relx=0.2,rely=0.01)
         self.gif.load('GUI_material/voice_rec.gif')
-        self.btn_rec.configure(text="Stop Talking", command=self.hide_gif)
+        self.btn_rec.configure(text="Stop Talking", command=self.stop_talk)
         
-        # Wait for the thread to end and show recognized text
-        self.st.join()
-        rec_text = self.st.text
-        self.txt.insert(tk.END, rec_text)
+        # # Start Speech recognition
+        # if not self.st.is_running:
+        #     self.st = SpeechThread(session)
+        #     self.st.start()
+            
+        self.st.rec = True
+        
+        # txt = self.q.get(block=True, timeout=None) 
+        
+        # # Show recognized text
+        # if txt is not None:
+        #     rec_text = self.st.text
+        # self.txt.configure(text=rec_text)
     
-    def hide_gif(self):
-        # self.gif.pack()
-        # self.gif.place(relx=0.3,rely=0.02)
-        # self.gif.load('GUI_material/voice_rec.jpg')
+    ## method stop_talk
+    #
+    #  Stop recognizing voice and hide microphone gif
+    def stop_talk(self):
+        self.st.rec = False
+        
         self.gif.place_forget()
         self.gif.grid_forget()
         self.gif.pack_forget()
-        self.btn_rec.configure(text="Start Talking", command=self.show_gif)
+        self.btn_rec.configure(text="Start Talking", command=self.start_talk)
         
 
 if __name__ == '__main__':

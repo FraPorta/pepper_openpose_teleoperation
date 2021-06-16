@@ -11,9 +11,13 @@ import speech_recognition as sr
 from threading import Thread
 
 class SpeechThread(Thread):
-    def __init__(self, session):
+    def __init__(self, session, q):
+        
         self.session = session
         self.text = None
+        self.rec = False
+        self.is_running = True
+        self.q = q
         
         # Speech recognizer  
         self.r = sr.Recognizer()
@@ -26,31 +30,42 @@ class SpeechThread(Thread):
     
     # Override the run() function of Thread class
     def run(self):
-        self.text = self.recognize()
-        print(self.text)
-        self.tts.say(self.text)
-    
+        while self.is_running:
+            if self.rec:
+                self.text = self.recognize()
+                print(self.text)
+                if self.text is not None:
+                    self.tts.say(self.text)
+                    self.q.put(self.text)
+                # self.rec = False
+                
+            time.sleep(0.1)
+            
+        print("Thread ended correctly")
+
+    ## method recognize
+    #
+    #  Record voice from microphone and recognize it using Google Speech Recognition
     def recognize(self):
         with sr.Microphone() as source:  
             recognized_text = None
             print("Say something! Pepper will repeat it")
-            self.audio = self.r.listen(source)
             
-            # received audio data, now we'll recognize it using Google Speech Recognition
             try:
-                # for testing purposes, we're just using the default API key
-                # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
-                # instead of `r.recognize_google(audio)`
-                
+                # Receive audio from microphone
+                self.audio = self.r.listen(source, timeout=1)
+            
+                # received audio data, recognize it using Google Speech Recognition
                 recognized_text = self.r.recognize_google(self.audio)
-
+                
+            except sr.WaitTimeoutError:
+                print("Mic timeout passed")
             except sr.UnknownValueError:
                 print("Google Speech Recognition could not understand audio")
             except sr.RequestError as e:
                 print("Could not request results from Google Speech Recognition service; {0}".format(e))
-                
-        if recognized_text is not None:     
-            return recognized_text
+
+        return recognized_text
         
         
 # Main initialization
