@@ -3,6 +3,7 @@ from GUI_material.image_label import ImageLabel
 from speech_thread import SpeechThread
 import argparse
 import qi
+import time
 
 from Queue import Queue
 
@@ -38,8 +39,8 @@ class Window1:
         self.btn_stop.place(relx=0.75,y=40)
         
         # Text init
-        # self.txt = tk.Label(self.master, bg='black', fg='white', height=4, width=50)
-        # self.txt.place(x=400, y=40)
+        self.txt = tk.Label(self.master, bg='black', fg='white', height=4, width=20)
+        self.txt.place(x=300, y=40)
         
         self.frame.pack()
         
@@ -58,6 +59,8 @@ class Window1:
     #
     #  Button callback to start talking
     def start_talk(self):
+        text = None
+        
         # Show gif
         self.gif.pack()
         self.gif.place(relx=0.2,rely=0.01)
@@ -71,12 +74,14 @@ class Window1:
             
         self.st.rec = True
         
-        # txt = self.q.get(block=True, timeout=None) 
+    
+        # text = self.q.get(block=True, timeout=None) 
         
         # # Show recognized text
-        # if txt is not None:
+        # if text is not None:
         #     rec_text = self.st.text
         # self.txt.configure(text=rec_text)
+
     
     ## method stop_talk
     #
@@ -88,7 +93,23 @@ class Window1:
         self.gif.grid_forget()
         self.gif.pack_forget()
         self.btn_rec.configure(text="Start Talking", command=self.start_talk)
-        
+    
+    # Start the mainloop
+    def start(self):
+        self.master.after(1000, func=self.check_queue)
+        self.master.mainloop()
+    
+    # Check in the queue if there is text recognized
+    def check_queue(self):
+        if self.st.is_running:
+            if not self.q.empty():
+                text = self.q.get(block=False, timeout=None) 
+            
+                # Show recognized text
+                if text is not None:
+                    rec_text = self.st.text
+                self.txt.configure(text=rec_text)
+        self.master.after(1000, func=self.check_queue)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -114,4 +135,4 @@ if __name__ == '__main__':
     
     root = tk.Tk()
     app = Window1(root, session)
-    root.mainloop()
+    app.start()

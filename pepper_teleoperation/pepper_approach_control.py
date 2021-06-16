@@ -14,10 +14,9 @@ from keypoints_to_angles import KeypointsToAngles
 from sensory_hub import DetectUserDepth, Person
 from approach_user import ApproachUser
 
-
-# LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
-# time_elapsed = None
-
+## class PepperApproachControl
+#
+# This class makes Pepper approach a User and then it will be teleoperated by an operator using 3d keypoints
 class PepperApproachControl():
     
     # Class initialization: connect to Pepper robot
@@ -200,8 +199,6 @@ class PepperApproachControl():
     #   in order to perform reactive control on Pepper upper body.
     #   The joints angles are filtered in real-time using a Butterworth filter
     def joints_control(self, session):
-        # global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch, HeadYaw, HeadPitch
-        # global time_elapsed
         
         self.loop_interrupted = False
         
@@ -308,7 +305,8 @@ class PepperApproachControl():
         
         # All joints
         names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
-                    "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll", "HipPitch"]
+                 "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll", \
+                 "HipPitch"]
         
         # Speed limits for the joints
         fractionMaxSpeed = 0.15
