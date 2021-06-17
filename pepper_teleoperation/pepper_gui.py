@@ -143,6 +143,8 @@ class PepperGui:
     #  Button callback to start talking
     def start_talk(self):
         # Show gif
+        self.gif = ImageLabel(self.master)
+        self.gif.config(relief="flat", borderwidth=0)
         self.gif.pack()
         self.gif.place(relx=0.2,rely=0.01)
         self.gif.load('GUI_material/voice_rec.gif')
