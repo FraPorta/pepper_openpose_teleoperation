@@ -8,51 +8,79 @@ import time
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
-from Queue import Queue
+from threading import Thread
+
 # local imports
 from keypoints_to_angles import KeypointsToAngles 
 from sensory_hub import DetectUserDepth, Person
-from approach_user import ApproachUser
+from approach_user_thread import ApproachUser
 
 ## class PepperApproachControl
 #
 # This class makes Pepper approach a User and then it will be teleoperated by an operator using 3d keypoints
-class PepperApproachControl():
+class PepperApproachControl(Thread):
     
     # Class initialization: connect to Pepper robot
-    def __init__(self, show_plot, approach_requested, approach_only, ip, port):
+    def __init__(self, session, show_plot, approach_requested, approach_only, queue_in, queue_out):
         
         self.LShoulderPitch = self.LShoulderRoll = self.LElbowYaw = self.LElbowRoll = self.RShoulderPitch = self.RShoulderRoll = self.RElbowYaw = self.RElbowRoll = self.HipPitch = None
-        
+        self.session = session
         self.show_plot = show_plot
         self.approach_requested = approach_requested
         self.approach_only = approach_only
-        self.ip_addr = ip 
-        self.port = port
+        # self.ip_addr = ip 
+        # self.port = port
         self.time_elapsed = 0.0
         self.loop_interrupted = False
-
-    def run(self):
-        # Init NAOqi session
-        session = qi.Session()
         
-        # Try to connect to the robot
-        try:
-            session.connect("tcp://" + self.ip_addr + ":" + str(self.port))
-        except RuntimeError:
-            print ("Can't connect to Naoqi at ip \"" + self.ip_addr + "\" on port " + str(self.port) +".\n"
-                "Please check your script arguments. Run with -h option for help.")
-            sys.exit(1)
-            
+        self.queue_in = queue_in
+        self.queue_out = queue_out
+  
+        # Call the Thread class's init function
+        Thread.__init__(self)
+
+    ## method run
+    #
+    #  main function of the thread
+    def run(self):
+        user_approached = False
+        stop_signal = False
         # Try to approach the user (repeat until a user is approached)
-        if approach_requested or approach_only:
-            while not self.approach_user(session):
+        if self.approach_requested or self.approach_only:
+            while (not user_approached):
+                self.queue_out.put("Searching for a user...")
+                user_approached, stop_signal = self.approach_user(self.session)
+                if not user_approached:
+                    self.queue_out.put("User not found...")
                 time.sleep(1)
+                
         
         # Start receiving keypoints and controlling Pepper joints
-        if not approach_only:
+        if (not self.approach_only) and (not stop_signal):
+            
             print("Waiting for keypoints...")
-            self.joints_control(session)
+            self.queue_out.put("User found! Waiting for keypoints...")
+            self.joints_control(self.session)
+
+        print("PepperApproachControl Thread terminated correctly")
+        self.queue_out.put("Pepper has stopped!")
+    
+    ##  function approach_user
+    #
+    #   Pepper searches for a person and then approaches it        
+    def approach_user(self, session):
+        # Approach the user
+        dud = DetectUserDepth(session, None, False)
+        dud.start()
+        
+        apar = ""
+        cpar = "1"
+        self.au = ApproachUser(apar, cpar, session)
+        self.au.run(self.queue_in)
+
+        dud.stop()
+        
+        return self.au.user_approached, self.au.queue_stop 
     
     ##  function saturate_angles
     #
@@ -199,9 +227,6 @@ class PepperApproachControl():
     #   in order to perform reactive control on Pepper upper body.
     #   The joints angles are filtered in real-time using a Butterworth filter
     def joints_control(self, session):
-        
-        self.loop_interrupted = False
-        
         # Get the services ALMotion and ALRobotPosture
         motion_service  = session.service("ALMotion")
         posture_service = session.service("ALRobotPosture")
@@ -312,10 +337,11 @@ class PepperApproachControl():
         fractionMaxSpeed = 0.15
 
         print("Start controlling Pepper joints!")
+        self.queue_out.put("Start controlling Pepper joints!")
         
         # Start loop to receive angles and control Pepper joints
         while KtA.start_flag and not self.loop_interrupted:
-            try:
+            try:    
                 # Get angles from keypoints
                 self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll, self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll, self.HipPitch = KtA.get_angles()
 
@@ -389,6 +415,10 @@ class PepperApproachControl():
                 
                 # Update time elapsed
                 self.time_elapsed = time.time() - t1
+                
+                # Check if the queue was updated
+                if not self.queue_in.empty():
+                    self.loop_interrupted = self.queue_in.get(block=False, timeout=None)
             
             # If the user stops the script with CTRL+C, interrupt loop
             except KeyboardInterrupt:
@@ -425,25 +455,8 @@ class PepperApproachControl():
             print("Showing angles plots, close to terminate the program.")
             plt.show()
 
-        print("Program terminated cleanly!")
                 
-    ##  function approach_user
-    #
-    #   Pepper searches for a person and then approaches it        
-    def approach_user(self, session):
-        # Approach the user
-        apar = ""
-        cpar = "1"
-        
-        dud = DetectUserDepth(session, None, False)
-        dud.start()
-        
-        au = ApproachUser(apar, cpar, session)
-        au.run()
-
-        dud.stop()
-        
-        return au.user_approached
+    
     
 # Main 
 if __name__ == "__main__":
@@ -467,67 +480,19 @@ if __name__ == "__main__":
     approach_only = bool(args.approach_only)
     ip_addr = args.ip 
     port = args.port
+    # Start naoQi session
+    session = qi.Session()
     
-    pac = PepperApproachControl(show_plot, approach_requested, approach_only, ip_addr, port)
-    pac.run()
+    # Try to connect to the robot
+    try:
+        session.connect("tcp://" + args.ip + ":" + str(args.port))
+    except RuntimeError:
+        print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
+            "Please check your script arguments. Run with -h option for help.")
+        sys.exit(1)
     
-    # session = qi.Session()
+    pac = PepperApproachControl(session, show_plot, approach_requested, approach_only)
+    pac.start()
     
-    # # Try to connect to the robot
-    # try:
-    #     session.connect("tcp://" + args.ip + ":" + str(args.port))
-    # except RuntimeError:
-    #     print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
-    #            "Please check your script arguments. Run with -h option for help.")
-    #     sys.exit(1)
+    pac.join()
     
-    # # Try to approach the user (repeat until a user is approached)
-    # if approach_requested or approach_only:
-    #     while not approach_user(session):
-    #         time.sleep(1)
-    
-    # # Start receiving keypoints and controlling Pepper joints
-    # if not approach_only:
-    #     print("Waiting for keypoints...")
-    #     joints_control(session, ip_addr, port, show_plot)
-        
-
-
-'''
-# Plot power spectrum and time signals (Raw and filtered)
-    # N_samples = len(LSP_arr)
-    # sampling_rate = N_samples/time_elapsed
-    # time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
-
-    # data = np.array(LSP_arr)
-    # data_filt = np.array(LSP_arr_filt)
-    
-    # fourier_transform = np.fft.rfft(data)
-
-    # abs_fourier_transform = np.abs(fourier_transform)
-
-    # power_spectrum = np.square(abs_fourier_transform)
-
-    # frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
-
-    # print ("Sampling rate: %f" % sampling_rate)
-
-    # fig, axs = plt.subplots(2)
-    # fig.suptitle('LSP Time signal and power spectrum')
-    # if len(frequency) == len(power_spectrum):
-    #     axs[0].plot(frequency, power_spectrum)
-    #     axs[0].set(xlabel='frequency [1/s]', ylabel='power')
-    #     axs[0].set_title('Power Spectrum')
-
-    # if len(time_samples) == len(data):
-    #     axs[1].plot(time_samples, data)
-    #     axs[1].set(xlabel='time [s]', ylabel='LSP angle')
-    #     axs[1].set_title('LSP angle signal')
-        
-
-    # if len(time_samples) == len(data_filt):
-    #     axs[1].plot(time_samples, data_filt)
-    #     axs[1].legend(['signal', 'filtered'])
-
-    # plt.show()
-'''

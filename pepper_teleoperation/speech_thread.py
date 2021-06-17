@@ -11,13 +11,14 @@ import speech_recognition as sr
 from threading import Thread
 
 class SpeechThread(Thread):
-    def __init__(self, session, q):
+    def __init__(self, session, q, q_rec):
         
         self.session = session
         self.text = None
         self.rec = False
         self.is_running = True
         self.q = q
+        self.q_rec = q_rec
         
         # Speech recognizer  
         self.r = sr.Recognizer()
@@ -31,17 +32,25 @@ class SpeechThread(Thread):
     # Override the run() function of Thread class
     def run(self):
         while self.is_running:
+            if not self.q_rec.empty():
+                command = self.q_rec.get(block=False, timeout= None)
+                # print(command)
+                if command == "Rec":
+                    self.rec = True
+                elif command == "StopRec":
+                    self.rec = False
+                elif command == "StopRun":
+                    self.is_running = False
+            
             if self.rec:
+                # print("Recording")
                 self.text = self.recognize()
-                print(self.text)
                 if self.text is not None:
                     self.tts.say(self.text)
                     self.q.put(self.text)
-                # self.rec = False
-                
             time.sleep(0.1)
             
-        print("Thread ended correctly")
+        print("Speech thread terminated correctly")
 
     ## method recognize
     #
@@ -49,17 +58,15 @@ class SpeechThread(Thread):
     def recognize(self):
         with sr.Microphone() as source:  
             recognized_text = None
-            print("Say something! Pepper will repeat it")
-            
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=1)
+                self.audio = self.r.listen(source, timeout=2)
             
                 # received audio data, recognize it using Google Speech Recognition
                 recognized_text = self.r.recognize_google(self.audio)
                 
             except sr.WaitTimeoutError:
-                print("Mic timeout passed")
+                pass
             except sr.UnknownValueError:
                 print("Google Speech Recognition could not understand audio")
             except sr.RequestError as e:
@@ -71,7 +78,7 @@ class SpeechThread(Thread):
 # Main initialization
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.134",
+    parser.add_argument("--ip", type=str, default="130.251.13.119",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")

@@ -23,7 +23,7 @@ Project:     CARESSES (http://caressesrobot.org/en/)
 '''
 
 # from pepper_teleoperation.pepper_approach_control import approach_user
-# from threading import Thread
+from threading import Thread
 
 import time
 import sys
@@ -112,14 +112,16 @@ class ApproachUser():
         self.user_not_found_timeout = 60
 
     ## Method executed when the thread is started.
-    def run(self):
+    def run(self, queue):
         try:
+            print("")
             timer_start = time.time()
             action_start_time = time.time()
 
             # self.sBasicAwareness.pauseAwareness()
             
             while not self.is_stopped:
+                
                 if time.time() - action_start_time > self.user_not_found_timeout:
                     self.is_stopped = True
                     # self.user_approached = False
@@ -179,6 +181,11 @@ class ApproachUser():
                             console_outputs[1][1] = 0
                         self.rotate(0.2)
                         self.lookingUser = True
+                        
+                # Check if the queue was updated
+                if not queue.empty():
+                    self.is_stopped = queue.get(block=False, timeout=None)
+                    self.queue_stop = True
                     
             if not self.user_approached:      
                 self.end()
@@ -254,13 +261,19 @@ class ApproachUser():
         self.life_service.setAutonomousAbilityEnabled("ListeningMovement", False)
         self.life_service.setAutonomousAbilityEnabled("SpeakingMovement", False)
         
-        if not self.is_stopped:
-            self.user_approached = True
-            print("User approached")
-        else:
-            self.user_approached = False
-            print("User not approached")
+        # print(self.life_service.getAutonomousAbilitiesStatus())
         
+        if not self.queue_stop:
+            if not self.is_stopped:
+                self.user_approached = True
+                print("User approached")
+            else:
+                self.user_approached = False
+                print("User not approached")
+        else:
+            # self.queue_stop = False
+            self.user_approached = True
+
 
 if __name__ == "__main__":
 
