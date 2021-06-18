@@ -29,9 +29,9 @@ class PepperGui:
         self.st = None
         
         # Master init
-        self.master.title("Talk through Pepper")
+        self.master.title("Pepper Control")
         self.master.geometry("960x480")
-        self.master.configure(bg='black')
+        self.master.configure(bg='#2c3e50')
         self.frame = tk.Frame(self.master)
         
         # Gif init
@@ -42,10 +42,10 @@ class PepperGui:
         # Button start recording
         self.btn_rec = tk.Button(self.master,
                                  text="Start Talking",
-                                 bg='#d62f2f',
+                                 bg='#c0392b',
                                  fg='white',
                                  font=('MS Sans Serif',self.btn_txt_size),
-                                 activebackground='#ce4d33',
+                                 activebackground='#e74c3c',
                                  width=20,
                                  height=2,
                                  state=tk.DISABLED,
@@ -56,10 +56,10 @@ class PepperGui:
         # Button start pepper approach and teleoperation
         self.btn_pepper = tk.Button(self.master, 
                                     text="Start Search/Teleoperation",
-                                    bg='#d62f2f',
+                                    bg='#c0392b',
                                     fg='white',
                                     font=('MS Sans Serif',self.btn_txt_size),
-                                    activebackground='#ce4d33',
+                                    activebackground='#e74c3c',
                                     activeforeground='white',
                                     width=20,
                                     height=2,
@@ -71,57 +71,66 @@ class PepperGui:
         # Button connect to Pepper
         self.btn_connect = tk.Button(self.master, 
                                     text="Connect to Pepper",
-                                    bg='#d62f2f',
+                                    bg='#c0392b',
                                     fg='white',
                                     font=('MS Sans Serif',self.btn_txt_size),
-                                    activebackground='#ce4d33',
+                                    activebackground='#e74c3c',
                                     activeforeground='white',
                                     width=20,
                                     height=2,
                                     disabledforeground="white",
+                                    relief=tk.RAISED,
                                     command=self.connect_pepper)        
         self.btn_connect.pack()
         self.btn_connect.place(x=750,y=400)
         
         # Labels init
-        self.txt = tk.Label(self.master, bg='black', fg='white', font=('MS Sans Serif',12))
+        self.txt_1 = tk.Label(self.master, bg='#2c3e50', fg='white', font=('MS Sans Serif',12,'bold'))
+        self.txt_1.place(x=325, y=10)
+        self.txt_1.configure(text="Recognized text:")
+        
+        self.txt = tk.Label(self.master, bg='#34495e', bd=3, fg='white', font=('MS Sans Serif',12), width=60, relief=tk.FLAT )
         self.txt.place(x=325, y=50)
         self.txt.configure(text="The recognized text will appear here...")
         
-        self.txt_pepper = tk.Label(self.master, bg='black', fg='white', font=('MS Sans Serif',12))
+        self.txt_pepper_1 = tk.Label(self.master, bg='#2c3e50', fg='white', font=('MS Sans Serif',12,'bold'))
+        self.txt_pepper_1.place(x=325, y=130)
+        self.txt_pepper_1.configure(text="Feedback:")
+        
+        self.txt_pepper = tk.Label(self.master, bg='#34495e', bd=3, fg='white', font=('MS Sans Serif',12), width=60, relief=tk.FLAT)
         self.txt_pepper.place(x=325, y=170)
         self.txt_pepper.configure(text="Feedback from Pepper will appear here...")
         
-        self.lbl_conn = tk.Label(self.master, bg='black', fg='white', font=('MS Sans Serif',11))
+        self.lbl_conn = tk.Label(self.master, bg='#34495e', fg='white', font=('MS Sans Serif',11))
         self.lbl_conn.place(x=750,y=370)
         self.lbl_conn.configure(text="Press the button to connect!")
         
         # CheckBoxes
         y=230
         self.c_approach = tk.Checkbutton(self.master, text = "Approach", variable = self.approach,\
-                                         onvalue = 1, offvalue = 0, font=('MS Sans Serif',12,'bold'), bg='black', fg='#d62f2f',\
-                                         selectcolor='white', activebackground="black", activeforeground='#d62f2f')
+                                         onvalue = 1, offvalue = 0, font=('MS Sans Serif',12,'bold'), bg='#2c3e50', fg='#c0392b',\
+                                         selectcolor='white', activebackground="#34495e", activeforeground='#c0392b')
         self.c_approach.place(x=20,y=y)
         
         self.c_teleop = tk.Checkbutton(self.master, text = "Teleoperation", variable = self.teleop,\
-                                       onvalue = 1, offvalue = 0, font=('MS Sans Serif',12,'bold'), bg='black', fg='#d62f2f',\
-                                       selectcolor='white', activebackground="black", activeforeground='#d62f2f')
+                                       onvalue = 1, offvalue = 0, font=('MS Sans Serif',12,'bold'), bg='#2c3e50', fg='#c0392b',\
+                                       selectcolor='white', activebackground="#34495e", activeforeground='#c0392b')
         self.c_teleop.place(x=20,y=y+30)
         
         # Texts
-        self.text_ip = tk.Entry(self.master, bg='black', fg='white', font=('MS Sans Serif',12),insertbackground='white',disabledbackground="#333333", width=15)
-        self.text_ip.insert(tk.END, "130.251.13.134")
+        self.text_ip = tk.Entry(self.master, bg='#2c3e50', fg='white', font=('MS Sans Serif',12),insertbackground='white',disabledbackground="#333333", width=15)
+        self.text_ip.insert(tk.END, "130.251.13.119")
         self.text_ip.place(x=600,y=400)
         
-        self.lbl_ip = tk.Label(self.master, bg='black', fg='white', font=('MS Sans Serif',12))
+        self.lbl_ip = tk.Label(self.master, bg='#2c3e50', fg='white', font=('MS Sans Serif',12))
         self.lbl_ip.place(x=574,y=400)
         self.lbl_ip.configure(text="IP:")
         
-        self.text_port = tk.Entry(self.master, bg='black', fg='white', font=('MS Sans Serif',12),insertbackground='white',disabledbackground="#333333", width=15)
+        self.text_port = tk.Entry(self.master, bg='#2c3e50', fg='white', font=('MS Sans Serif',12),insertbackground='white',disabledbackground="#333333", width=15)
         self.text_port.insert(tk.END, "9559")
         self.text_port.place(x=600,y=420)
         
-        self.lbl_port = tk.Label(self.master, bg='black', fg='white', font=('MS Sans Serif',12))
+        self.lbl_port = tk.Label(self.master, bg='#2c3e50', fg='white', font=('MS Sans Serif',12))
         self.lbl_port.place(x=560,y=420)
         self.lbl_port.configure(text="Port:")
         
@@ -229,7 +238,7 @@ class PepperGui:
         self.gif.config(relief="flat", borderwidth=0)
         self.gif.pack()
         self.gif.place(x=202, rely=0.01)
-        self.gif.load('GUI_material/voice_rec.gif')
+        self.gif.load('GUI_material\output-onlinegiftools.gif')
         
         # Change button text and command
         self.btn_rec.configure(text="Stop Talking", command=self.stop_talk)

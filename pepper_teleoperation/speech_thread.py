@@ -6,6 +6,7 @@ import argparse
 import sys
 import time
 import numpy as np
+import audioop
 
 import speech_recognition as sr
 from threading import Thread
@@ -31,10 +32,12 @@ class SpeechThread(Thread):
     
     # Override the run() function of Thread class
     def run(self):
+        
+        # mics = self.list_working_microphones()
+           
         while self.is_running:
             if not self.q_rec.empty():
                 command = self.q_rec.get(block=False, timeout= None)
-                # print(command)
                 if command == "Rec":
                     self.rec = True
                 elif command == "StopRec":
@@ -56,23 +59,63 @@ class SpeechThread(Thread):
     #
     #  Record voice from microphone and recognize it using Google Speech Recognition
     def recognize(self):
+        
         with sr.Microphone() as source:  
             recognized_text = None
             try:
                 # Receive audio from microphone
                 self.audio = self.r.listen(source, timeout=2)
-            
+
                 # received audio data, recognize it using Google Speech Recognition
-                recognized_text = self.r.recognize_google(self.audio)
+                recognized_text = self.r.recognize_google(self.audio, language="en-US")
                 
             except sr.WaitTimeoutError:
                 pass
             except sr.UnknownValueError:
                 print("Google Speech Recognition could not understand audio")
+                # print("Google Speech Recognition could not understand audio")
             except sr.RequestError as e:
                 print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
         return recognized_text
+    
+    def list_working_microphones(self):
+        """
+        Returns a dictionary mapping device indices to microphone names, for microphones that are currently hearing sounds. When using this function, ensure that your microphone is unmuted and make some noise at it to ensure it will be detected as working.
+        Each key in the returned dictionary can be passed to the ``Microphone`` constructor to use that microphone. For example, if the return value is ``{3: "HDA Intel PCH: ALC3232 Analog (hw:1,0)"}``, you can do ``Microphone(device_index=3)`` to use that microphone.
+        """
+        pyaudio_module = sr.Microphone.get_pyaudio()
+        audio = pyaudio_module.PyAudio()
+        try:
+            result = {}
+            for device_index in range(audio.get_device_count()):
+                device_info = audio.get_device_info_by_index(device_index)
+                device_name = device_info.get("name")
+                assert isinstance(device_info.get("defaultSampleRate"), (float, int)) and device_info["defaultSampleRate"] > 0, "Invalid device info returned from PyAudio: {}".format(device_info)
+                try:
+                    # read audio
+                    pyaudio_stream = audio.open(
+                        input_device_index=device_index, channels=1, format=pyaudio_module.paInt16,
+                        rate=int(device_info["defaultSampleRate"]), input=True
+                    )
+                    try:
+                        buffer = pyaudio_stream.read(1024)
+                        if not pyaudio_stream.is_stopped(): pyaudio_stream.stop_stream()
+                    finally:
+                        pyaudio_stream.close()
+                except Exception:
+                    continue
+
+                # compute RMS of debiased audio
+                energy = -audioop.rms(buffer, 2)
+                energy_bytes = chr(energy & 0xFF) + chr((energy >> 8) & 0xFF) if bytes is str else bytes([energy & 0xFF, (energy >> 8) & 0xFF])  # Python 2 compatibility
+                debiased_energy = audioop.rms(audioop.add(buffer, energy_bytes * (len(buffer) // 2), 2), 2)
+
+                if debiased_energy > 30:  # probably actually audio
+                    result[device_index] = device_name
+        finally:
+            audio.terminate()
+        return result
         
         
 # Main initialization
