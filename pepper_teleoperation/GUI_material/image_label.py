@@ -43,11 +43,3 @@ class ImageLabel(tk.Label):
             self.config(image=next(self.frames))
             self.after(self.delay, self.next_frame)
             
-
-    
-if __name__ == '__main__':
-    root = tk.Tk()
-    lbl = ImageLabel(root)
-    lbl.pack()
-    lbl.load('GUI_material/voice_loaderrr.gif')
-    root.mainloop()
