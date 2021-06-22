@@ -88,7 +88,7 @@ class PepperApproachControl(Thread):
     def saturate_angles(self, mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
         # global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
         # limit percentage for some angles 
-        limit = 0.7
+        limit = 0.9
         
         ## LEFT ##
         # LShoulderPitch saturation
@@ -113,8 +113,8 @@ class PepperApproachControl(Thread):
         if LEY is None:
             # LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Actuator/Value")
             self.LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Sensor/Value")
-        elif LEY < -2.0857:
-            self.LElbowYaw = -2.0857
+        elif LEY < -2.0857*limit:
+            self.LElbowYaw = -2.0857*limit
         elif LEY > 2.0857*limit:
             self.LElbowYaw = 2.0857*limit
 
@@ -154,8 +154,8 @@ class PepperApproachControl(Thread):
             self.RElbowYaw = mProxy.getData("Device/SubDeviceList/RElbowYaw/Position/Sensor/Value")
         elif REY < -2.0857*limit:
             self.RElbowYaw = -2.0857*limit
-        elif REY > 2.0857:
-            self.RElbowYaw = 2.0857
+        elif REY > 2.0857*limit:
+            self.RElbowYaw = 2.0857*limit
 
         # RElbowRoll saturation
         if RER is None:
@@ -170,7 +170,6 @@ class PepperApproachControl(Thread):
         if HP is None:
             # HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Actuator/Value")
             self.HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value")
-            # print("RER")
         elif HP < -1.0385:
             self.HipPitch = -1.0385
         elif HP > 1.0385:
@@ -343,10 +342,14 @@ class PepperApproachControl(Thread):
         while KtA.start_flag and not self.loop_interrupted:
             try:    
                 # Get angles from keypoints
-                self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll, self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll, self.HipPitch = KtA.get_angles()
+                self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
+                self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
+                self.HipPitch = KtA.get_angles()
 
                 # Saturate angles to avoid exceding Pepper limits
-                self.saturate_angles(memProxy, self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll, self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll, self.HipPitch)
+                self.saturate_angles(memProxy, self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
+                                               self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
+                                               self.HipPitch)
                 
                 # Store raw angles lists for plots
                 if self.show_plot and self.time_elapsed > 2.0:
@@ -393,8 +396,8 @@ class PepperApproachControl(Thread):
                 ### Pepper joints control ###
                 # Control angles list 
                 angles = [float(self.LShoulderPitch), float(self.LShoulderRoll), float(self.LElbowYaw), float(self.LElbowRoll), \
-                    float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll), float(self.HipPitch)]
-        
+                          float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll), float(self.HipPitch)]
+
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
                     motion_service.setAngles(names, angles, fractionMaxSpeed)

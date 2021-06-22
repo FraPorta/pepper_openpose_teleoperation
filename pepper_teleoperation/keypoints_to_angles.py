@@ -224,7 +224,7 @@ class KeypointsToAngles:
         except ValueError:
             LElbowRoll = 0
         # LElbowRoll = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) - np.pi
-        
+        # print('Before', LElbowYaw*180/np.pi, LElbowRoll*180/np.pi)
         # Return LElbow angles
         return LElbowYaw, LElbowRoll
 
@@ -251,8 +251,7 @@ class KeypointsToAngles:
 
 
         # Formula to calculate the module of RElbowYaw angle
-        x = np.dot(n_1_2_3, n_2_3_4) / (np.linalg.norm(n_1_2_3) * np.linalg.norm(n_2_3_4)
-)
+        x = np.dot(n_1_2_3, n_2_3_4) / (np.linalg.norm(n_1_2_3) * np.linalg.norm(n_2_3_4))
         try:
             theta_REY_module = math.acos(x)
         except ValueError:
@@ -281,10 +280,9 @@ class KeypointsToAngles:
             if intermediate_angle_2 > np.pi/2:
                 RElbowYaw = theta_REY_module
             elif intermediate_angle_2 <= np.pi/2:
-                RElbowYaw = theta_REY_module - (2 * np.pi)
-                
-        # print('REY', RElbowYaw) 
-          
+                # RElbowYaw = -theta_REY_module + (2 * np.pi)
+                RElbowYaw = theta_REY_module 
+        
         # Formula for RElbowRoll angle
         x = np.dot(v_3_4, v_3_2) / (np.linalg.norm(v_3_4) * np.linalg.norm(v_3_2))
         try:
@@ -293,6 +291,7 @@ class KeypointsToAngles:
             RElbowRoll =  0
         # RElbowRoll = np.pi - np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
+        # print('Before', RElbowYaw*180/np.pi, RElbowRoll*180/np.pi)
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
     

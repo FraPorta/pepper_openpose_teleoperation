@@ -78,12 +78,13 @@ class ApproachUser():
         self.sPeoplePerception = session.service("ALPeoplePerception")
         self.sBasicAwareness = session.service("ALBasicAwareness")
         
-        # If Autonomous life is disabled, enable it
-        if self.life_service.getState() == "disabled":
-            self.life_service.setState("solitary")
+        # # If Autonomous life is disabled, enable it
+        # if self.life_service.getState() == "disabled":
+        #     self.life_service.setState("solitary")
         
         # Enable the autonomous abilities
         self.life_service.setAutonomousAbilityEnabled("All", True)
+        
         self.using_face_reco = DetectUserDepth.isUsingFaceRecognition()
         
         # Define timeouts

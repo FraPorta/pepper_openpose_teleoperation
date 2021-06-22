@@ -60,7 +60,7 @@ class PepperApproachControl():
     def saturate_angles(self, mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
         # global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
         # limit percentage for some angles 
-        limit = 0.7
+        limit = 1.0
         
         ## LEFT ##
         # LShoulderPitch saturation
@@ -85,8 +85,8 @@ class PepperApproachControl():
         if LEY is None:
             # LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Actuator/Value")
             self.LElbowYaw = mProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Sensor/Value")
-        elif LEY < -2.0857:
-            self.LElbowYaw = -2.0857
+        elif LEY < -2.0857*limit:
+            self.LElbowYaw = -2.0857*limit
         elif LEY > 2.0857*limit:
             self.LElbowYaw = 2.0857*limit
 
@@ -126,8 +126,8 @@ class PepperApproachControl():
             self.RElbowYaw = mProxy.getData("Device/SubDeviceList/RElbowYaw/Position/Sensor/Value")
         elif REY < -2.0857*limit:
             self.RElbowYaw = -2.0857*limit
-        elif REY > 2.0857:
-            self.RElbowYaw = 2.0857
+        elif REY > 2.0857*limit:
+            self.RElbowYaw = 2.0857*limit
 
         # RElbowRoll saturation
         if RER is None:
@@ -317,10 +317,15 @@ class PepperApproachControl():
         while KtA.start_flag and not self.loop_interrupted:
             try:
                 # Get angles from keypoints
-                self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll, self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll, self.HipPitch = KtA.get_angles()
+                self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
+                self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
+                self.HipPitch = KtA.get_angles()
 
                 # Saturate angles to avoid exceding Pepper limits
-                self.saturate_angles(memProxy, self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll, self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll, self.HipPitch)
+                self.saturate_angles(memProxy,\
+                                     self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
+                                     self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
+                                     self.HipPitch)
                 
                 # Store raw angles lists for plots
                 if self.show_plot and self.time_elapsed > 2.0:
@@ -368,7 +373,8 @@ class PepperApproachControl():
                 # Control angles list 
                 angles = [float(self.LShoulderPitch), float(self.LShoulderRoll), float(self.LElbowYaw), float(self.LElbowRoll), \
                     float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll), float(self.HipPitch)]
-        
+                # print("After ",float(self.RElbowYaw)*180/np.pi, float(self.RElbowRoll)*180/np.pi)
+                # print("Left ",float(self.LElbowYaw)*180/np.pi, float(self.LElbowRoll)*180/np.pi)
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
                     motion_service.setAngles(names, angles, fractionMaxSpeed)
@@ -448,14 +454,14 @@ class PepperApproachControl():
 # Main 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.119",
+    parser.add_argument("--ip", type=str, default="130.251.13.134",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")
     
     parser.add_argument("--show_plots", type=int, default=1,
                         help="Select 1 if you want to see the plots when you interrupt the script with the keyboard")
-    parser.add_argument("--approach_user", type=int, default=1,
+    parser.add_argument("--approach_user", type=int, default=0,
                         help="Select 1 if you want Pepper to search and approach a user in the room before teleoperation")
     parser.add_argument("--approach_only", type=int, default=0,
                         help="Select 1 if you want Pepper to only search and approach a user in the room without teleoperation")
