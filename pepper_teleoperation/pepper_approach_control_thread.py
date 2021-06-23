@@ -2,6 +2,7 @@
 
 import qi
 from naoqi import ALProxy
+import os
 import argparse
 import sys
 import time
@@ -9,6 +10,7 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 from threading import Thread
+from datetime import datetime
 
 # local imports
 from keypoints_to_angles import KeypointsToAngles 
@@ -28,8 +30,6 @@ class PepperApproachControl(Thread):
         self.show_plot = show_plot
         self.approach_requested = approach_requested
         self.approach_only = approach_only
-        # self.ip_addr = ip 
-        # self.port = port
         self.time_elapsed = 0.0
         self.loop_interrupted = False
         
@@ -142,7 +142,6 @@ class PepperApproachControl(Thread):
         if RSR is None:
             # RShoulderRoll = mProxy.getData("Device/SubDeviceList/RShoulderRoll/Position/Actuator/Value")
             self.RShoulderRoll = mProxy.getData("Device/SubDeviceList/RShoulderRoll/Position/Sensor/Value")
-            # print("RSR")
         elif RSR < -1.5620 :
             self.RShoulderRoll = -1.5620
         elif RSR > -0.0087:
@@ -219,7 +218,33 @@ class PepperApproachControl(Thread):
             axs[pos_x, pos_y].plot(time_samples, data_robot)
             axs[pos_x, pos_y].legend(['signal', 'filtered', 'robot'])
 
-   
+    ##  function save_data
+    #
+    #   save raw and filtered angles at the end of the session
+    def save_data(self, raw_data, filt_data, robot_data, name, time_elapsed, path):
+        # Plot time signals (Raw and filtered)
+        data = raw_data
+        N_samples = len(data)
+        sampling_rate = N_samples/time_elapsed
+        time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
+        
+        if len(raw_data) > len(filt_data):
+            filt_data.append(0.0)
+        data_filt = filt_data
+        
+        if len(raw_data) > len(robot_data):
+            robot_data.append(0.0)
+        data_robot = robot_data
+        
+        out = np.array([data, data_filt, data_robot, time_samples])
+        
+        np.savetxt(path + "/" + name + "_data.csv", 
+                out,
+                delimiter =", ", 
+                fmt ='% s')
+
+
+            
     ##  function joints_control
     #
     #   This function uses the setAngles and setStiffnesses methods
@@ -263,8 +288,9 @@ class PepperApproachControl(Thread):
 
         # Filter parameters 
         fs = 5.3            # sample rate, Hz
-        cutoff = 0.7        # desired cutoff frequency of the filter, Hz 
         nyq = 0.5 * fs      # Nyquist Frequency
+        
+        cutoff = 0.7        # desired cutoff frequency of the filter, Hz 
         order = 1           # filter order
         normal_cutoff = cutoff / nyq    # Cutoff freq for lowpass filter
 
@@ -282,10 +308,10 @@ class PepperApproachControl(Thread):
         z_REY = signal.lfilter_zi(b, a)   
         z_RER = signal.lfilter_zi(b, a)  
         
-        # Hip filter initialization
-        # Continuous (Head and Pitch)
+        # Hip filter parameters
         cutoff = 0.3    # desired cutoff frequency of the filter, Hz 
         order = 2       # filter order
+        
         b_HP, a_HP = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
         z_HP = signal.lfilter_zi(b_HP, a_HP)   
         
@@ -381,17 +407,17 @@ class PepperApproachControl(Thread):
                 
                 # Store filtered angles for plots
                 if self.show_plot and self.time_elapsed > 2.0:
-                    LSP_arr_filt.append(self.LShoulderPitch)
-                    LSR_arr_filt.append(self.LShoulderRoll)
-                    LEY_arr_filt.append(self.LElbowYaw)
-                    LER_arr_filt.append(self.LElbowRoll)
+                    LSP_arr_filt.append(self.LShoulderPitch[0])
+                    LSR_arr_filt.append(self.LShoulderRoll[0])
+                    LEY_arr_filt.append(self.LElbowYaw[0])
+                    LER_arr_filt.append(self.LElbowRoll[0])
 
-                    RSP_arr_filt.append(self.RShoulderPitch)
-                    RSR_arr_filt.append(self.RShoulderRoll)
-                    REY_arr_filt.append(self.RElbowYaw)
-                    RER_arr_filt.append(self.RElbowRoll)
+                    RSP_arr_filt.append(self.RShoulderPitch[0])
+                    RSR_arr_filt.append(self.RShoulderRoll[0])
+                    REY_arr_filt.append(self.RElbowYaw[0])
+                    RER_arr_filt.append(self.RElbowRoll[0])
                     
-                    HP_arr_filt.append(self.HipPitch)
+                    HP_arr_filt.append(self.HipPitch[0])
                 
                 ### Pepper joints control ###
                 # Control angles list 
@@ -438,29 +464,34 @@ class PepperApproachControl(Thread):
                 
         # show plots of the joints angles
         if self.show_plot:
-            # Create figure with 12 subplots
-            fig, axs = plt.subplots(3,3)
-            fig.suptitle('Joints angles')
-
-            # Plot joint angles
-            self.plot_data(axs, LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, pos_x=0, pos_y=0)
-            self.plot_data(axs, LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, pos_x=0, pos_y=1)
-            self.plot_data(axs, LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', self.time_elapsed, pos_x=0, pos_y=2)
-            self.plot_data(axs, LER_arr, LER_arr_filt, LER_arr_robot, 'LER', self.time_elapsed, pos_x=1, pos_y=0)
-
-            self.plot_data(axs, RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', self.time_elapsed, pos_x=1, pos_y=1)
-            self.plot_data(axs, RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', self.time_elapsed, pos_x=1, pos_y=2)
-            self.plot_data(axs, REY_arr, REY_arr_filt, REY_arr_robot, 'REY', self.time_elapsed, pos_x=2, pos_y=0)
-            self.plot_data(axs, RER_arr, RER_arr_filt, RER_arr_robot, 'RER', self.time_elapsed, pos_x=2, pos_y=1)
-
-            self.plot_data(axs, HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  self.time_elapsed, pos_x=2, pos_y=2)
+            now = datetime.now()
+            # dd/mm/YY H:M:S
+            dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
             
-            print("Showing angles plots, close to terminate the program.")
-            plt.show()
-
+            if not os.path.exists("angles_data"):
+                os.mkdir("angles_data")
                 
-    
-    
+            path = "angles_data/" + dt_string
+            try:
+                os.mkdir(path)
+                
+                # Plot joint angles
+                self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, path)
+                self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, path)
+                self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', self.time_elapsed, path)
+                self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', self.time_elapsed, path)
+
+                self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', self.time_elapsed, path)
+                self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', self.time_elapsed, path)
+                self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', self.time_elapsed, path)
+                self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', self.time_elapsed, path)
+
+                self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  self.time_elapsed, path)
+                
+            except OSError:
+                print ("Creation of the directory %s failed" % path)
+            
+            
 # Main 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

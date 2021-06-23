@@ -67,7 +67,7 @@ class SpeechThread(Thread):
                 self.audio = self.r.listen(source, timeout=2)
 
                 # received audio data, recognize it using Google Speech Recognition
-                recognized_text = self.r.recognize_google(self.audio, language="en-US")
+                recognized_text = self.r.recognize_google(self.audio, language="en-EN")
                 
             except sr.WaitTimeoutError:
                 pass

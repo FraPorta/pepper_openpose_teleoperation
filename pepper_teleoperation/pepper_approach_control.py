@@ -99,7 +99,6 @@ class PepperApproachControl():
         elif LER > -0.0087:
             self.LElbowRoll = -0.0087
 
-
         ## RIGHT ##
         # RShoulderPitch saturation
         if RSP is None:
@@ -114,7 +113,6 @@ class PepperApproachControl():
         if RSR is None:
             # RShoulderRoll = mProxy.getData("Device/SubDeviceList/RShoulderRoll/Position/Actuator/Value")
             self.RShoulderRoll = mProxy.getData("Device/SubDeviceList/RShoulderRoll/Position/Sensor/Value")
-            # print("RSR")
         elif RSR < -1.5620 :
             self.RShoulderRoll = -1.5620
         elif RSR > -0.0087:
