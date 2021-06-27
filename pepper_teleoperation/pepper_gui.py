@@ -1,9 +1,11 @@
-from Tkconstants import RIGHT
+from Tkconstants import RIGHT, SUNKEN
 import Tkinter as tk
+import ttk
 import argparse
 import qi
 # import time
 import sys
+import pyglet
 from PIL import ImageTk, Image
 
 
@@ -19,6 +21,8 @@ dark_red = '#c82b2e'
 darkest_red = '#52373b' 
 light_red = '#eb9ea0'
 orange = '#ec5633'
+
+pyglet.font.add_file('GUI_material\Roboto-Medium.ttf')
 
 class PepperGui:
     def __init__(self, master, session):
@@ -37,7 +41,8 @@ class PepperGui:
         self.q_appr_teleop = Queue()
         self.st = None
         
-        font='Lucida Sans'
+        font='Roboto-Medium'
+        # font='Gotham'
         btn_txt_size = 12
         
         # Colors
@@ -58,7 +63,7 @@ class PepperGui:
         IMAGE_PATH = 'GUI_material/background.png'
         WIDTH, HEIGTH = 1000, 562
 
-        self.canvas = tk.Canvas(self.master, width=WIDTH, height=HEIGTH)
+        self.canvas = tk.Canvas(self.master, width=WIDTH, height=HEIGTH, bd=0, highlightthickness=0, relief='ridge')
         self.canvas.pack()
 
         img = ImageTk.PhotoImage(Image.open(IMAGE_PATH).resize((WIDTH, HEIGTH), Image.ANTIALIAS))
@@ -74,31 +79,31 @@ class PepperGui:
                                  font=(font, btn_txt_size),
                                  activebackground=dark_red,
                                  activeforeground='white',
-                                 width=20,
+                                 width=15,
                                  height=2,
                                  disabledforeground=light_red,
                                  relief=tk.FLAT,
                                  state=tk.DISABLED,
                                  command=self.start_talk)        
         self.btn_rec.pack()
-        self.btn_rec.place(x=20, y=80)
+        self.btn_rec.place(x=80, y=80)
         
         # Button start pepper approach and teleoperation
         self.btn_pepper = tk.Button(self.master, 
-                                    text="Start Search/Teleoperation",
+                                    text="Start Pepper",
                                     bg=darkest_red,
                                     fg='white',
                                     font=(font, btn_txt_size),
                                     activebackground=dark_red,
                                     activeforeground='white',
-                                    width=20,
+                                    width=15,
                                     height=2,
                                     disabledforeground=light_red,
                                     relief=tk.FLAT,
                                     state=tk.DISABLED,
                                     command=self.start_pepper)        
         self.btn_pepper.pack()
-        self.btn_pepper.place(x=20, y=245)
+        self.btn_pepper.place(x=80, y=245)
         
         # Button connect to Pepper
         self.btn_connect = tk.Button(self.master, 
@@ -110,12 +115,12 @@ class PepperGui:
                                     activeforeground='white',
                                     width=20,
                                     height=2,
-                                    disabledforeground="grey",
+                                    disabledforeground="white",
                                     anchor=tk.CENTER,
                                     relief=tk.FLAT,
                                     command=self.connect_pepper)        
         self.btn_connect.pack()
-        self.btn_connect.place(relx=0.4, y=450)
+        self.btn_connect.place(relx=0.4, y=448)
         
         # Gifs
         self.gif = ImageLabel(self.master)
@@ -137,7 +142,7 @@ class PepperGui:
                               fg='white',
                               font=(font,12,'bold'))
         self.txt_1.place(x=350, y=50)
-        self.txt_1.configure(text="Recognized text:")
+        self.txt_1.configure(text="Recognized text")
         
         self.txt = tk.Label(self.master,
                             bg=dark_red,
@@ -146,16 +151,17 @@ class PepperGui:
                             font=(font,12),
                             width=62,
                             height=2,
-                            relief=tk.FLAT)
+                            relief=tk.FLAT,
+                            anchor='w')
         self.txt.place(x=350, y=83)
-        self.txt.configure(text="The recognized text will appear here...")
+        self.txt.configure(text=" ")
         
         self.txt_pepper_1 = tk.Label(self.master,
                                      bg=red,
                                      fg='white',
                                      font=(font,12,'bold'))
         self.txt_pepper_1.place(x=350, y=215)
-        self.txt_pepper_1.configure(text="Feedback:")
+        self.txt_pepper_1.configure(text="Feedback")
         
         self.txt_pepper = tk.Label(self.master,
                                    bg=dark_red,
@@ -164,83 +170,105 @@ class PepperGui:
                                    font=(font,12),
                                    width=62,
                                    height=2,
-                                   relief=tk.FLAT)
+                                   relief=tk.FLAT,
+                                   anchor='w')
 
         self.txt_pepper.place(x=350, y=248)
-        self.txt_pepper.configure(text="Feedback from Pepper will appear here...")
+        self.txt_pepper.configure(text=" ")
         
         self.lbl_conn = tk.Label(self.master,
                                  bg=darkest_red,
                                  fg=light_red,
-                                 font=(font,11))
-        self.lbl_conn.place(relx=0.4, y=520)
-        self.lbl_conn.configure(text="Press the button to connect!")
+                                 font=(font,11),
+                                 width=30,
+                                 wraplength=0,
+                                 relief=tk.FLAT)
+        self.lbl_conn.place(x=358, y=520)
+        self.lbl_conn.configure(text="Press the button to connect")
         
         # CheckBoxes
-        y=305
+        # y=305
+        # on_image = tk.PhotoImage(height=20, width=20)
+        # off_image = tk.PhotoImage(height=20, width=20)
+        # on_image.put((darkest_red,), to=(0, 0, 5,5))
+
+        y=160
         self.c_approach = tk.Checkbutton(self.master,
-                                         text = "Approach",
+                                         text = "Search User",
                                          variable = self.approach,
                                          onvalue = 1,
                                          offvalue = 0,
-                                         font=(font,12,'bold'),
+                                         font=(font,12),
                                          bg=red,
                                          fg='white',
-                                         selectcolor=darkest_red,
+                                         relief=tk.FLAT,
+                                         selectcolor=light_red,
                                          activebackground=red,
+                                         highlightthickness=0,
+                                         bd=0,
                                          activeforeground='white')
-        self.c_approach.place(x=20, y=y)
+        self.c_approach.place(x=80, y=y)
+        # switch_on = tk.PhotoImage(width=50, height=50)
+        # switch_off = tk.PhotoImage(width=50, height=50)
         
         self.c_teleop = tk.Checkbutton(self.master,
-                                       text = "Teleoperation",
+                                    #    image = switch_off,
+                                    #    selectimage= switch_on,
+                                       text = "Teleoperate",
                                        variable = self.teleop,
                                        onvalue = 1, 
                                        offvalue = 0,
-                                       font=(font,12,'bold'), 
+                                       font=(font,12), 
                                        bg=red,
                                        fg='white',
-                                       selectcolor=darkest_red,
+                                       selectcolor=light_red,
                                        activebackground=red,
                                        activeforeground='white',
-                                       relief=tk.FLAT)
-        self.c_teleop.place(x=20, y=y+30)
+                                       highlightthickness=0,
+                                       bd=0,
+                                       relief=tk.FLAT,
+                                       indicatoron=True
+                                       
+                                      )
+        
+        self.c_teleop.place(x=80, y=y+30)
         
         # Entries
         self.text_ip = tk.Entry(self.master,
-                                bg=red,
-                                fg='white',
+                                bg=darkest_red,
+                                fg=light_red,
                                 font=(font,12),
-                                insertbackground='white',
+                                insertbackground=light_red,
                                 disabledbackground=darkest_red,
-                                width=15,
+                                width=13,
                                 relief=tk.FLAT)
         self.text_ip.insert(tk.END, "130.251.13.134")
-        self.text_ip.place(x=580-135, y=405-10)
+        self.text_ip.place(x=476, y=405-15)
         
         self.lbl_ip = tk.Label(self.master,
                                bg=darkest_red,
-                               fg='white',
-                               font=(font,12))
-        self.lbl_ip.place(x=554-135, y=405-10)
-        self.lbl_ip.configure(text="IP:")
+                               fg=light_red,
+                               font=(font,12,'bold'))
+        self.lbl_ip.place(x=395, y=405-15)
+        self.lbl_ip.configure(text="IP")
         
         self.text_port = tk.Entry(self.master,
-                                  bg=red,
-                                  fg='white',
+                                  bg=darkest_red,
+                                  fg=light_red,
                                   font=(font,12),
-                                  insertbackground='white',
+                                  insertbackground=light_red,
                                   disabledbackground=darkest_red,
-                                  width=15,
+                                  width=4,
                                   relief=tk.FLAT)
         self.text_port.insert(tk.END, "9559")
-        self.text_port.place(x=580-135, y=425-10)
+        self.text_port.place(x=550, y=425-15)
         
         self.lbl_port = tk.Label(self.master,
                                  bg=darkest_red,
-                                 fg='white',
-                                 font=(font,12))
-        self.lbl_port.place(x=540-135, y=425-10)
-        self.lbl_port.configure(text="Port:")  
+                                 fg=light_red,
+                                 font=(font,12,'bold'))
+        self.lbl_port.place(x=395, y=425-15)
+        self.lbl_port.configure(text="Port")  
     
     ## method connect_pepper
     #
