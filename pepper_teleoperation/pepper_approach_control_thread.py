@@ -239,12 +239,10 @@ class PepperApproachControl(Thread):
         out = np.array([data, data_filt, data_robot, time_samples])
         
         np.savetxt(path + "/" + name + "_data.csv", 
-                out,
-                delimiter =", ", 
-                fmt ='% s')
-
-
-            
+                   out,
+                   delimiter =", ", 
+                   fmt ='% s')
+       
     ##  function joints_control
     #
     #   This function uses the setAngles and setStiffnesses methods

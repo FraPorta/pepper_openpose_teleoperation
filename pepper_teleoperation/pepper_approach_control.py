@@ -1,5 +1,6 @@
 # -*- encoding: UTF-8 -*-
 
+import datetime
 import qi
 from naoqi import ALProxy
 import argparse
@@ -8,6 +9,7 @@ import time
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
+import os
 from Queue import Queue
 # local imports
 from keypoints_to_angles import KeypointsToAngles 
@@ -190,7 +192,32 @@ class PepperApproachControl():
             axs[pos_x, pos_y].plot(time_samples, data_robot)
             axs[pos_x, pos_y].legend(['signal', 'filtered', 'robot'])
 
-   
+    ##  function save_data
+    #
+    #   save raw and filtered angles at the end of the session
+    def save_data(self, raw_data, filt_data, robot_data, name, time_elapsed, path):
+        # Plot time signals (Raw and filtered)
+        data = raw_data
+        N_samples = len(data)
+        sampling_rate = N_samples/time_elapsed
+        time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
+        
+        if len(raw_data) > len(filt_data):
+            filt_data.append(0.0)
+        data_filt = filt_data
+        
+        if len(raw_data) > len(robot_data):
+            robot_data.append(0.0)
+        data_robot = robot_data
+        
+        out = np.array([data, data_filt, data_robot, time_samples])
+        
+        np.savetxt(path + "/" + name + "_data.csv", 
+                   out,
+                   delimiter =", ", 
+                   fmt ='% s')
+        
+        
     ##  function joints_control
     #
     #   This function uses the setAngles and setStiffnesses methods
@@ -409,6 +436,33 @@ class PepperApproachControl():
                 
         # show plots of the joints angles
         if self.show_plot:
+            now = datetime.now()
+            # dd/mm/YY H:M:S
+            dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
+            
+            if not os.path.exists("angles_data"):
+                os.mkdir("angles_data")
+                
+            path = "angles_data/" + dt_string
+            try:
+                os.mkdir(path)
+                
+                # Plot joint angles
+                self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, path)
+                self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, path)
+                self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', self.time_elapsed, path)
+                self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', self.time_elapsed, path)
+
+                self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', self.time_elapsed, path)
+                self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', self.time_elapsed, path)
+                self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', self.time_elapsed, path)
+                self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', self.time_elapsed, path)
+
+                self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  self.time_elapsed, path)
+                
+            except OSError:
+                print ("Creation of the directory %s failed" % path)
+                
             # Create figure with 12 subplots
             fig, axs = plt.subplots(3,3)
             fig.suptitle('Joints angles')
@@ -475,63 +529,3 @@ if __name__ == "__main__":
     pac = PepperApproachControl(show_plot, approach_requested, approach_only, ip_addr, port)
     pac.run()
     
-    # session = qi.Session()
-    
-    # # Try to connect to the robot
-    # try:
-    #     session.connect("tcp://" + args.ip + ":" + str(args.port))
-    # except RuntimeError:
-    #     print ("Can't connect to Naoqi at ip \"" + args.ip + "\" on port " + str(args.port) +".\n"
-    #            "Please check your script arguments. Run with -h option for help.")
-    #     sys.exit(1)
-    
-    # # Try to approach the user (repeat until a user is approached)
-    # if approach_requested or approach_only:
-    #     while not approach_user(session):
-    #         time.sleep(1)
-    
-    # # Start receiving keypoints and controlling Pepper joints
-    # if not approach_only:
-    #     print("Waiting for keypoints...")
-    #     joints_control(session, ip_addr, port, show_plot)
-        
-
-
-'''
-# Plot power spectrum and time signals (Raw and filtered)
-    # N_samples = len(LSP_arr)
-    # sampling_rate = N_samples/time_elapsed
-    # time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
-
-    # data = np.array(LSP_arr)
-    # data_filt = np.array(LSP_arr_filt)
-    
-    # fourier_transform = np.fft.rfft(data)
-
-    # abs_fourier_transform = np.abs(fourier_transform)
-
-    # power_spectrum = np.square(abs_fourier_transform)
-
-    # frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
-
-    # print ("Sampling rate: %f" % sampling_rate)
-
-    # fig, axs = plt.subplots(2)
-    # fig.suptitle('LSP Time signal and power spectrum')
-    # if len(frequency) == len(power_spectrum):
-    #     axs[0].plot(frequency, power_spectrum)
-    #     axs[0].set(xlabel='frequency [1/s]', ylabel='power')
-    #     axs[0].set_title('Power Spectrum')
-
-    # if len(time_samples) == len(data):
-    #     axs[1].plot(time_samples, data)
-    #     axs[1].set(xlabel='time [s]', ylabel='LSP angle')
-    #     axs[1].set_title('LSP angle signal')
-        
-
-    # if len(time_samples) == len(data_filt):
-    #     axs[1].plot(time_samples, data_filt)
-    #     axs[1].legend(['signal', 'filtered'])
-
-    # plt.show()
-'''
