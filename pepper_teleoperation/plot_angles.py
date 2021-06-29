@@ -86,24 +86,25 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--path", type=str, default="angles_data/23_06_2021_17-30-45",
-                        help="Insert relative path of the folder where the angles are stored in a csv file")
+    parser.add_argument("--path", type=str, default="23_06_2021_17-30-45",
+                        help="Insert name of the folder where the angles are stored in a csv file in the 'angles_data' folder")
 
     args = parser.parse_args()
-    path = args.path
+    path = "angles_data/" + args.path
     
     pa = PlotAngles(path)
     pa.run()
     
+    
+    
 '''
-        if plot_PS:
-            # POWER SPECTRUM
-            fourier_transform = np.fft.rfft(data)
-            abs_fourier_transform = np.abs(fourier_transform)
-            power_spectrum = np.square(abs_fourier_transform)
-            frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
-            if len(frequency) == len(power_spectrum):
-                axs[0].plot(frequency, power_spectrum)
-                axs[0].set(xlabel='frequency [1/s]', ylabel='power')
-                axs[0].set_title('Power Spectrum')
-        '''
+# POWER SPECTRUM
+fourier_transform = np.fft.rfft(data)
+abs_fourier_transform = np.abs(fourier_transform)
+power_spectrum = np.square(abs_fourier_transform)
+frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
+if len(frequency) == len(power_spectrum):
+    axs[0].plot(frequency, power_spectrum)
+    axs[0].set(xlabel='frequency [1/s]', ylabel='power')
+    axs[0].set_title('Power Spectrum')
+'''

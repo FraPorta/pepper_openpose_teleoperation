@@ -187,11 +187,6 @@ class PepperGui:
         self.lbl_conn.configure(text="Press the button to connect")
         
         # CheckBoxes
-        # y=305
-        # on_image = tk.PhotoImage(height=20, width=20)
-        # off_image = tk.PhotoImage(height=20, width=20)
-        # on_image.put((darkest_red,), to=(0, 0, 5,5))
-
         y=160
         self.c_approach = tk.Checkbutton(self.master,
                                          text = "Search User",
@@ -227,10 +222,7 @@ class PepperGui:
                                        highlightthickness=0,
                                        bd=0,
                                        relief=tk.FLAT,
-                                       indicatoron=True
-                                       
-                                      )
-        
+                                       indicatoron=True)
         self.c_teleop.place(x=80, y=y+30)
         
         # Entries
@@ -242,7 +234,7 @@ class PepperGui:
                                 disabledbackground=darkest_red,
                                 width=13,
                                 relief=tk.FLAT)
-        self.text_ip.insert(tk.END, "130.251.13.134")
+        self.text_ip.insert(tk.END, "130.251.13.191")
         self.text_ip.place(x=476, y=405-15)
         
         self.lbl_ip = tk.Label(self.master,
@@ -386,7 +378,7 @@ class PepperGui:
         self.gif_load.load(gif_path)
         
         # Change button text and command
-        self.btn_pepper.configure(text="Start Search/Teleoperation", command=self.start_pepper)
+        self.btn_pepper.configure(text="Start Pepper", command=self.start_pepper)
     
     ## method start_talk
     #
