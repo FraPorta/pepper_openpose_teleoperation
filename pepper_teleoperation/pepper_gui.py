@@ -1,4 +1,3 @@
-from Tkconstants import RIGHT, SUNKEN
 import Tkinter as tk
 import ttk
 import argparse
@@ -7,8 +6,6 @@ import qi
 import sys
 import pyglet
 from PIL import ImageTk, Image
-
-
 
 from GUI_material.image_label import ImageLabel
 from speech_thread import SpeechThread
@@ -360,7 +357,7 @@ class PepperGui:
             # Change button text and command
             self.btn_pepper.configure(text="Stop Pepper", command=self.stop_pepper)
         else:
-            self.txt_pepper.configure(text="Please select Approach or Teleoperation or both")
+            self.txt_pepper.configure(text="Please select at least one between Search User and Teleoperate")
             
     ## method stop_pepper
     #
