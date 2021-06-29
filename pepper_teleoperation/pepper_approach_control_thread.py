@@ -512,6 +512,7 @@ if __name__ == "__main__":
     approach_only = bool(args.approach_only)
     ip_addr = args.ip 
     port = args.port
+    
     # Start naoQi session
     session = qi.Session()
     

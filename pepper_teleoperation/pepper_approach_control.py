@@ -11,6 +11,7 @@ from scipy import signal
 import matplotlib.pyplot as plt
 import os
 from Queue import Queue
+from datetime import datetime
 # local imports
 from keypoints_to_angles import KeypointsToAngles 
 from sensory_hub import DetectUserDepth, Person
@@ -382,17 +383,17 @@ class PepperApproachControl():
                 
                 # Store filtered angles for plots
                 if self.show_plot and self.time_elapsed > 2.0:
-                    LSP_arr_filt.append(self.LShoulderPitch)
-                    LSR_arr_filt.append(self.LShoulderRoll)
-                    LEY_arr_filt.append(self.LElbowYaw)
-                    LER_arr_filt.append(self.LElbowRoll)
+                    LSP_arr_filt.append(self.LShoulderPitch[0])
+                    LSR_arr_filt.append(self.LShoulderRoll[0])
+                    LEY_arr_filt.append(self.LElbowYaw[0])
+                    LER_arr_filt.append(self.LElbowRoll[0])
 
-                    RSP_arr_filt.append(self.RShoulderPitch)
-                    RSR_arr_filt.append(self.RShoulderRoll)
-                    REY_arr_filt.append(self.RElbowYaw)
-                    RER_arr_filt.append(self.RElbowRoll)
+                    RSP_arr_filt.append(self.RShoulderPitch[0])
+                    RSR_arr_filt.append(self.RShoulderRoll[0])
+                    REY_arr_filt.append(self.RElbowYaw[0])
+                    RER_arr_filt.append(self.RElbowRoll[0])
                     
-                    HP_arr_filt.append(self.HipPitch)
+                    HP_arr_filt.append(self.HipPitch[0])
                 
                 ### Pepper joints control ###
                 # Control angles list 
