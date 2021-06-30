@@ -37,8 +37,6 @@ class PlotAngles:
             robot_data.append(0.0)
         data_robot = np.array(robot_data)
         
-        
-        
         if len(time_samples) == len(data):
             axs[pos[0], pos[1]].plot(time_samples, data)
             axs[pos[0], pos[1]].set(xlabel='time [s]', ylabel='Angle [rad]')

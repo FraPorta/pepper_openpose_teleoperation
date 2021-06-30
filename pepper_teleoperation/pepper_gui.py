@@ -231,7 +231,7 @@ class PepperGui:
                                 disabledbackground=darkest_red,
                                 width=13,
                                 relief=tk.FLAT)
-        self.text_ip.insert(tk.END, "130.251.13.191")
+        self.text_ip.insert(tk.END, "130.251.13.113")
         self.text_ip.place(x=476, y=405-15)
         
         self.lbl_ip = tk.Label(self.master,
@@ -267,7 +267,7 @@ class PepperGui:
         
         session_connected = True
         value_err = False
- 
+        
         try:
             self.ip = self.text_ip.get()
             self.port = int(self.text_port.get())

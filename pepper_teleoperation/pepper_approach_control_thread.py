@@ -224,9 +224,10 @@ class PepperApproachControl(Thread):
     def save_data(self, raw_data, filt_data, robot_data, name, time_elapsed, path):
         # Plot time signals (Raw and filtered)
         data = raw_data
-        N_samples = len(data)
-        sampling_rate = N_samples/time_elapsed
-        time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
+        # N_samples = len(data)
+        # sampling_rate = N_samples/time_elapsed
+        # time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
+        time_samples = time_elapsed
         
         if len(raw_data) > len(filt_data):
             filt_data.append(0.0)
@@ -347,6 +348,8 @@ class PepperApproachControl(Thread):
         HP_arr_filt = []
         HP_arr_robot = []
         
+        time_arr = []
+        
         # Initialize time counter
         t1 = time.time()
         self.time_elapsed = 0.0
@@ -439,10 +442,14 @@ class PepperApproachControl(Thread):
                         RER_arr_robot.append(memProxy.getData("Device/SubDeviceList/RElbowRoll/Position/Sensor/Value"))
 
                         HP_arr_robot.append(memProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value"))
-                
+
+                    
                 # Update time elapsed
                 self.time_elapsed = time.time() - t1
                 
+                if self.time_elapsed > 2.0:
+                    time_arr.append(float(self.time_elapsed))
+                    
                 # Check if the queue was updated
                 if not self.queue_in.empty():
                     self.loop_interrupted = self.queue_in.get(block=False, timeout=None)
@@ -473,18 +480,31 @@ class PepperApproachControl(Thread):
             try:
                 os.mkdir(path)
                 
+                # # Plot joint angles
+                # self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, path)
+                # self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, path)
+                # self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', self.time_elapsed, path)
+                # self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', self.time_elapsed, path)
+
+                # self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', self.time_elapsed, path)
+                # self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', self.time_elapsed, path)
+                # self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', self.time_elapsed, path)
+                # self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', self.time_elapsed, path)
+
+                # self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  self.time_elapsed, path)
+                
                 # Plot joint angles
-                self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, path)
-                self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, path)
-                self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', self.time_elapsed, path)
-                self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', self.time_elapsed, path)
+                self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', time_arr, path)
+                self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', time_arr, path)
+                self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', time_arr, path)
+                self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', time_arr, path)
 
-                self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', self.time_elapsed, path)
-                self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', self.time_elapsed, path)
-                self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', self.time_elapsed, path)
-                self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', self.time_elapsed, path)
+                self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', time_arr, path)
+                self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', time_arr, path)
+                self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', time_arr, path)
+                self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', time_arr, path)
 
-                self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  self.time_elapsed, path)
+                self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  time_arr, path)
                 
             except OSError:
                 print ("Creation of the directory %s failed" % path)

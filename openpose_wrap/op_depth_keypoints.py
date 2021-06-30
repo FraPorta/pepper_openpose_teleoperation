@@ -220,8 +220,7 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         #             # print(rotationVector)
         #             if rotationVector is not None:
         #                 # Add head yaw pitch and roll to the keypoints dictionary
-        #                 wp_dict[20] = [float(rotationVector[0][0]), float(rotationVector[0][1]), float(rotationVector[0][2])] 
-                         
+        #                 wp_dict[20] = [float(rotationVector[0][0]), float(rotationVector[0][1]), float(rotationVector[0][2])]                
         #         except cv2.error as e:
         #             print(e)
                 
