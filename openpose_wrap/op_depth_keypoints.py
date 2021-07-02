@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import math
 import time
+from datetime import datetime
 from numpy.core.fromnumeric import size
 
 # Kinect libraries
@@ -19,7 +20,8 @@ from pykinect2 import PyKinectRuntime
 # Local imports
 from pykinect_lib.map_functions import *
 import pykinect_lib.utils_PyKinectV2 as utils
-from socket_send import SocketSend 
+from socket_send import SocketSend
+from socket_receive import SocketReceiveSignal
 
 # BODY_25 model keypoints (25 body parts consisting of COCO + foot)
 #     {0,  "Nose"},
@@ -89,6 +91,19 @@ def checkOcclusion(bodyPart, prev_depths, current_depth):
                     return True
     return False
 
+## function store_keypoints
+#
+#  save the keypoints in a file with timestamp
+def store_keypoints(wp_dict, filename):
+    if wp_dict:
+        temp_dict = wp_dict.copy()
+        temp_dict['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+        file = filename + '/keypoints.txt'
+        # print(file)
+        with open(file,'a') as f: 
+            f.write(str(temp_dict))
+            f.write("\n")
+
 ##  function get_head_pose
 #
 #   calculate head pose using cv2 solvePnP
@@ -132,7 +147,7 @@ def display(datums, fps, frame):
 ##  function displayDepthKeypoints
 #
 #   display keypoints on depth image and calculate and send the camera frame 3D points to a socket publisher
-def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
+def displayDepthKeypoints(datums, depth_frame, fps, frame, filename,saveKeypoints, display):
     global dv_previous
     keypointOccluded = False
     
@@ -233,8 +248,11 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, display):
         else:
             dv_previous = dv_dict
             
-            # Send keypoints to another python script via socket (PUB/SUB)
-            ss.send(wp_dict)
+        # Send keypoints to another python script via socket (PUB/SUB)
+        ss.send(wp_dict)
+            
+        if saveKeypoints:
+            store_keypoints(wp_dict, filename)
 
         if display:
             # Write FPS on image
@@ -328,6 +346,7 @@ try:
 
     # Initialize socket to send keypoints
     ss = SocketSend()
+    sr = SocketReceiveSignal()
 
     # Initialize time counter
     t1 = time.perf_counter()
@@ -337,8 +356,31 @@ try:
 
     # Main loop
     userWantsToExit = False
+    saveKeypoints = False
+    filename = None
+    
+    now = datetime.now()
+    dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
+            
+    if not os.path.exists("keypoints_data"):
+        os.mkdir("keypoints_data")
+                
     while not userWantsToExit:
-
+        # Check if the user is using the keypoints to control Pepper
+        msg = sr.receive()
+        
+        # print(msg)
+        
+        if msg == b'Start':
+            now = datetime.now()
+            dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
+            filename = "keypoints_data/" + dt_string 
+            os.mkdir(filename)
+            saveKeypoints = True
+            
+        elif msg == b'Stop':
+            saveKeypoints = False
+            
         if kinect.has_new_depth_frame() and kinect.has_new_color_frame():
             
             # Get Kinect last depth frame
@@ -372,7 +414,7 @@ try:
                     fps = math.floor(1/float(time_elapsed))
 
                     # Map color space keypoints to depth space 
-                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, display=False)
+                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, filename, saveKeypoints, display=False)
 
                     # Display OpenPose output image
                     userWantsToExit = display(datum, fps, frame)

@@ -6,6 +6,7 @@ import os
 import argparse
 import sys
 import time
+import csv
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
@@ -16,6 +17,7 @@ from datetime import datetime
 from keypoints_to_angles import KeypointsToAngles 
 from sensory_hub import DetectUserDepth, Person
 from approach_user_thread import ApproachUser
+from socket_send import SocketSendSignal
 
 ## class PepperApproachControl
 #
@@ -35,6 +37,8 @@ class PepperApproachControl(Thread):
         
         self.queue_in = queue_in
         self.queue_out = queue_out
+        
+        self.sock_send = SocketSendSignal()
   
         # Call the Thread class's init function
         Thread.__init__(self)
@@ -57,9 +61,8 @@ class PepperApproachControl(Thread):
         
         # Start receiving keypoints and controlling Pepper joints
         if (not self.approach_only) and (not stop_signal):
-            
-            print("Waiting for keypoints...")
-            self.queue_out.put("User found! Waiting for keypoints...")
+            # print("Waiting for keypoints...")
+            self.queue_out.put("Waiting for keypoints...")
             self.joints_control(self.session)
 
         print("PepperApproachControl Thread terminated correctly")
@@ -221,23 +224,23 @@ class PepperApproachControl(Thread):
     ##  function save_data
     #
     #   save raw and filtered angles at the end of the session
-    def save_data(self, raw_data, filt_data, robot_data, name, time_elapsed, path):
+    def save_data(self, raw_data, filt_data, robot_data, name, time_arr, path):
         # Plot time signals (Raw and filtered)
         data = raw_data
         # N_samples = len(data)
         # sampling_rate = N_samples/time_elapsed
         # time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
-        time_samples = time_elapsed
+        time_samples = time_arr
         
         if len(raw_data) > len(filt_data):
             filt_data.append(0.0)
-        data_filt = filt_data
-        
+        data_filt =filt_data
+
         if len(raw_data) > len(robot_data):
             robot_data.append(0.0)
         data_robot = robot_data
         
-        out = np.array([data, data_filt, data_robot, time_samples])
+        out = np.array([data, data_filt, data_robot, time_samples], dtype='float64')
         
         np.savetxt(path + "/" + name + "_data.csv", 
                    out,
@@ -349,9 +352,11 @@ class PepperApproachControl(Thread):
         HP_arr_robot = []
         
         time_arr = []
+        timestamp_arr = []
         
         # Initialize time counter
         t1 = time.time()
+        # self.timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(t1))
         self.time_elapsed = 0.0
         
         # All joints
@@ -365,6 +370,9 @@ class PepperApproachControl(Thread):
         print("Start controlling Pepper joints!")
         self.queue_out.put("Start controlling Pepper joints!")
         
+        ## SEND SIGNAL TO SAVE KEYPOINTS WITH TIMESTAMPS
+        self.sock_send.send('Start')
+        
         # Start loop to receive angles and control Pepper joints
         while KtA.start_flag and not self.loop_interrupted:
             try:    
@@ -372,11 +380,20 @@ class PepperApproachControl(Thread):
                 self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
                 self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
                 self.HipPitch = KtA.get_angles()
+                
+                # Update time elapsed and timestamp
+                t = time.time()
+                self.timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                self.time_elapsed = t - t1
 
                 # Saturate angles to avoid exceding Pepper limits
                 self.saturate_angles(memProxy, self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
                                                self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
                                                self.HipPitch)
+                
+                if self.time_elapsed > 2.0:
+                    time_arr.append(self.time_elapsed)
+                    timestamp_arr.append(self.timestamp)
                 
                 # Store raw angles lists for plots
                 if self.show_plot and self.time_elapsed > 2.0:
@@ -443,13 +460,8 @@ class PepperApproachControl(Thread):
 
                         HP_arr_robot.append(memProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value"))
 
-                    
-                # Update time elapsed
-                self.time_elapsed = time.time() - t1
                 
-                if self.time_elapsed > 2.0:
-                    time_arr.append(float(self.time_elapsed))
-                    
+                     
                 # Check if the queue was updated
                 if not self.queue_in.empty():
                     self.loop_interrupted = self.queue_in.get(block=False, timeout=None)
@@ -467,6 +479,9 @@ class PepperApproachControl(Thread):
                 KtA.stop_receiving()
                 # sys.exit(-1)
                 
+        # signal to Openpose to stop saving keypoints
+        self.sock_send.send('Stop')
+               
         # show plots of the joints angles
         if self.show_plot:
             now = datetime.now()
@@ -505,6 +520,12 @@ class PepperApproachControl(Thread):
                 self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', time_arr, path)
 
                 self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  time_arr, path)
+                
+                with open(path + '/timestamps.csv', 'w') as f: 
+                    write = csv.writer(f) 
+                    write.writerow(timestamp_arr) 
+                
+                self.sock_send.close()
                 
             except OSError:
                 print ("Creation of the directory %s failed" % path)

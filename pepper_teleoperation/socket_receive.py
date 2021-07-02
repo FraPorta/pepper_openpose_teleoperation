@@ -21,7 +21,7 @@ class SocketReceive:
         # Get local ip address
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname) 
-        local_ip = "130.251.13.123"
+        # local_ip = "130.251.13.123"
         # try socket connect
         try: 
             self.sock.connect("tcp://%s:1234" % local_ip)

@@ -231,14 +231,14 @@ class PepperGui:
                                 disabledbackground=darkest_red,
                                 width=13,
                                 relief=tk.FLAT)
-        self.text_ip.insert(tk.END, "130.251.13.113")
-        self.text_ip.place(x=476, y=405-15)
+        self.text_ip.insert(tk.END, "130.251.13.108")
+        self.text_ip.place(x=476, y=390)
         
         self.lbl_ip = tk.Label(self.master,
                                bg=darkest_red,
                                fg=light_red,
                                font=(font,12,'bold'))
-        self.lbl_ip.place(x=395, y=405-15)
+        self.lbl_ip.place(x=395, y=390)
         self.lbl_ip.configure(text="IP")
         
         self.text_port = tk.Entry(self.master,
@@ -250,13 +250,13 @@ class PepperGui:
                                   width=4,
                                   relief=tk.FLAT)
         self.text_port.insert(tk.END, "9559")
-        self.text_port.place(x=550, y=425-15)
+        self.text_port.place(x=550, y=410)
         
         self.lbl_port = tk.Label(self.master,
                                  bg=darkest_red,
                                  fg=light_red,
                                  font=(font,12,'bold'))
-        self.lbl_port.place(x=395, y=425-15)
+        self.lbl_port.place(x=395, y=410)
         self.lbl_port.configure(text="Port")  
     
     ## method connect_pepper
