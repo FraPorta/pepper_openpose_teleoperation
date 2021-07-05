@@ -20,7 +20,6 @@ class PlotAngles:
                     6: (2,0),
                     7: (2,1),
                     8: (2,2)}
-    
         
     ##  function plot_data
     #
@@ -55,7 +54,8 @@ class PlotAngles:
     # load and plot data from the specified folder
     def run(self):
         # Loads list of files in the folder
-        files_list = [f for f in os.listdir(self.path) if isfile(join(self.path, f))]
+        files_list = [f for f in os.listdir(self.path) if isfile(join(self.path, f)) and 'data' in f]
+        
         files_list.reverse()
         
         # Create figure with 12 subplots
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--path", type=str, default="23_06_2021_17-30-45",
+    parser.add_argument("--path", type=str, default="05_07_2021_16-00-53",
                         help="Insert name of the folder where the angles are stored in a csv file in the 'angles_data' folder")
 
     args = parser.parse_args()

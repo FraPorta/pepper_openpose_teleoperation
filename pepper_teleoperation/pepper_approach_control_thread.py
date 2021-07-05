@@ -242,7 +242,7 @@ class PepperApproachControl(Thread):
         
         out = np.array([data, data_filt, data_robot, time_samples], dtype='float64')
         
-        np.savetxt(path + "/" + name + "_data.csv", 
+        np.savetxt(path + "/" + "data_" + name + ".csv", 
                    out,
                    delimiter =", ", 
                    fmt ='% s')

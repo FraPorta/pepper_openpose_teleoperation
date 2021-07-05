@@ -104,6 +104,7 @@ def store_keypoints(wp_dict, filename):
             f.write(str(temp_dict))
             f.write("\n")
 
+'''
 ##  function get_head_pose
 #
 #   calculate head pose using cv2 solvePnP
@@ -127,6 +128,7 @@ def get_head_pose(image_points, model_points, size=[1080,1920]):
         return rotation_vector, translation_vector
     else:
         return None
+'''
 
 ##  function display
 # 
@@ -217,7 +219,8 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, filename,saveKeypoint
                         if depth_value > 0 and depth_value < 3000:
                             # Map depth point to world point (x, y, z in meters in camera frame)
                             world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
-                            wp_dict[i] = world_point
+                            # wp_dict[i] = world_point
+                            wp_dict[str(i)] = world_point
                             
                             # if i == 0 or i in range(15,17):
                             # # if i == 0 or i in range(15,19):
@@ -399,7 +402,7 @@ try:
                     fps = round(1/float(time_elapsed),1)
 
                     # Map color space keypoints to depth space 
-                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, filename, saveKeypoints, display=False)
+                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, filename, saveKeypoints, display=True)
 
                     # Display OpenPose output image
                     userWantsToExit = display(datum, fps, frame)  
