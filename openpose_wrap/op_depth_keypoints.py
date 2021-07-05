@@ -97,8 +97,8 @@ def checkOcclusion(bodyPart, prev_depths, current_depth):
 def store_keypoints(wp_dict, filename):
     if wp_dict:
         temp_dict = wp_dict.copy()
-        temp_dict['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-        file = filename + '/keypoints.txt'
+        temp_dict['timestamp'] = datetime.now().strftime('%H:%M:%S.%f')
+        file = filename + '/keypoints_sent.txt'
         # print(file)
         with open(file,'a') as f: 
             f.write(str(temp_dict))
@@ -176,68 +176,53 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, filename,saveKeypoint
         
         # proceed only if a person was detected
         if body_keypoints is not None:
-            for i in range(0,17): # extract only the needed depth points (upper body limbs)
-                if i not in range(9,15): # don't extract leg keypoints
-                    x = body_keypoints[0,i,0]
-                    y = body_keypoints[0,i,1]
-                    score = body_keypoints[0,i,2]
+            for i in range(0,9): # extract only the needed depth points (upper body limbs)
+                # if i not in range(9,15): # don't extract leg keypoints
+                x = body_keypoints[0,i,0]
+                y = body_keypoints[0,i,1]
+                # score = body_keypoints[0,i,2]
+                
+                color_point = [int(x),int(y)]
+                
+                # check if the keypoint was detected 
+                # if color_point[0] > 0 and color_point[1] > 0 and score > 0.6: 
+                if color_point[0] > 0 and color_point[1] > 0:
+                    # map color point to correspondent depth point  
+                    depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
                     
-                    color_point = [int(x),int(y)]
-                    
-                    # check if the keypoint was detected 
-                    # if color_point[0] > 0 and color_point[1] > 0 and score > 0.6: 
-                    if color_point[0] > 0 and color_point[1] > 0:
-                        # map color point to correspondent depth point  
-                        depth_point = color_point_2_depth_point(kinect, _DepthSpacePoint, kinect._depth_frame_data, color_point)
+                    if depth_point[0] < depth_height and depth_point[1] < depth_width and not math.isinf(depth_point[0]) and not math.isinf(depth_point[1]):
+
+                        # extract depth value from depth image
+                        depth_value = depth_img[depth_point[1], depth_point[0]]
+
+                        # Check if the keypoint is occluded
+                        if dv_previous and depth_value > 0 and depth_value < 3000:
+                            keypointOccluded = checkOcclusion(i, dv_previous, depth_value)
+
+                        # If keypoint is occluded, mantain the previous depth
+                        if keypointOccluded:
+                            if i in dv_previous:
+                                depth_value = dv_previous.get(i)
+                                ko_count += 1
                         
-                        if depth_point[0] < depth_height and depth_point[1] < depth_width and not math.isinf(depth_point[0]) and not math.isinf(depth_point[1]):
+                        # Add depth points and value to respective dictionaries
+                        dp_dict[i] = depth_point
+                        dv_dict[i] = depth_value
+                        
+                        if display:
+                            # Draw keypoint on depth image
+                            cv2.drawMarker(depth_colormap, (depth_point[0], depth_point[1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
 
-                            # extract depth value from depth image
-                            depth_value = depth_img[depth_point[1], depth_point[0]]
-
-                            # Check if the keypoint is occluded
-                            if dv_previous and depth_value > 0 and depth_value < 3000:
-                                keypointOccluded = checkOcclusion(i, dv_previous, depth_value)
-
-                            # If keypoint is occluded, mantain the previous depth
-                            if keypointOccluded:
-                                if i in dv_previous:
-                                    depth_value = dv_previous.get(i)
-                                    ko_count += 1
+                        # Add world point to the dictionary if the depth value is not zero and not higher than 3 meters
+                        if depth_value > 0 and depth_value < 3000:
+                            # Map depth point to world point (x, y, z in meters in camera frame)
+                            world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
+                            wp_dict[i] = world_point
                             
-                            # Add depth points and value to respective dictionaries
-                            dp_dict[i] = depth_point
-                            dv_dict[i] = depth_value
-                            
-                            if display:
-                                # Draw keypoint on depth image
-                                cv2.drawMarker(depth_colormap, (depth_point[0], depth_point[1]), (0,0,0), markerType=cv2.MARKER_SQUARE, markerSize=5, thickness=5, line_type=cv2.LINE_AA)
-
-                            # Add world point to the dictionary if the depth value is not zero and not higher than 3 meters
-                            if depth_value > 0 and depth_value < 3000:
-                                # Map depth point to world point (x, y, z in meters in camera frame)
-                                world_point = depth_point_2_world_point(kinect, _DepthSpacePoint, depth_point, depth_value) 
-                                wp_dict[i] = world_point
-                                
-                                # if i == 0 or i in range(15,17):
-                                # # if i == 0 or i in range(15,19):
-                                #     color_dict[i] = color_point
-                                #     head_dict[i] = world_point
-                                    
-        # Get head keypoints for head pose
-        # if color_dict and head_dict:
-        #     if len(color_dict) == 3:   
-        #         image_points = np.array(list(color_dict.values()), dtype=np.double)
-        #         model_points = np.array(list(head_dict.values()))
-        #         try:
-        #             # Extract head Rotation vector from keypoints 
-        #             rotationVector, translation_vec = get_head_pose(image_points, model_points)
-        #             # print(rotationVector)
-        #             if rotationVector is not None:
-        #                 # Add head yaw pitch and roll to the keypoints dictionary
-        #                 wp_dict[20] = [float(rotationVector[0][0]), float(rotationVector[0][1]), float(rotationVector[0][2])]                
-        #         except cv2.error as e:
-        #             print(e)
+                            # if i == 0 or i in range(15,17):
+                            # # if i == 0 or i in range(15,19):
+                            #     color_dict[i] = color_point
+                            #     head_dict[i] = world_point
                 
                 
         # if more than three keypoints are detected as occluded, it may be that the user
@@ -250,7 +235,8 @@ def displayDepthKeypoints(datums, depth_frame, fps, frame, filename,saveKeypoint
             
         # Send keypoints to another python script via socket (PUB/SUB)
         ss.send(wp_dict)
-            
+        
+        # Save keypoints in a file when are used to calculate angles for pepper joints
         if saveKeypoints:
             store_keypoints(wp_dict, filename)
 
@@ -359,9 +345,9 @@ try:
     saveKeypoints = False
     filename = None
     
+    # Create folder to save keypoints if it does not exist 
     now = datetime.now()
-    dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
-            
+    dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")      
     if not os.path.exists("keypoints_data"):
         os.mkdir("keypoints_data")
                 
@@ -369,18 +355,17 @@ try:
         # Check if the user is using the keypoints to control Pepper
         msg = sr.receive()
         
-        # print(msg)
-        
+        # Check if the signal for recording or stop recording keypoints was received
         if msg == b'Start':
             now = datetime.now()
             dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
             filename = "keypoints_data/" + dt_string 
             os.mkdir(filename)
             saveKeypoints = True
-            
         elif msg == b'Stop':
             saveKeypoints = False
-            
+        
+        # When new color and depth frames are available elaborate them with Openpose
         if kinect.has_new_depth_frame() and kinect.has_new_color_frame():
             
             # Get Kinect last depth frame
@@ -411,14 +396,13 @@ try:
                     time_elapsed = time.perf_counter() - t1
                     t1 = time.perf_counter()
 
-                    fps = math.floor(1/float(time_elapsed))
+                    fps = round(1/float(time_elapsed),1)
 
                     # Map color space keypoints to depth space 
                     userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, filename, saveKeypoints, display=False)
 
                     # Display OpenPose output image
-                    userWantsToExit = display(datum, fps, frame)
-                    
+                    userWantsToExit = display(datum, fps, frame)  
             else:
                 break
 # Catch exceptions    

@@ -93,7 +93,7 @@ class SocketReceiveSignal:
             msg = self.sock.recv(flags=zmq.NOBLOCK)
             
             # A message has been received
-            self.sock.send_string('Received' + str(msg))
+            self.sock.send_string('Received ' + str(msg))
             if msg:
                 return msg
             else:

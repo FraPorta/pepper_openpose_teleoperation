@@ -366,10 +366,18 @@ class KeypointsToAngles:
         # print(temp_dict)
         return temp_dict
 
+    ##  method get_keypoints
+    #
+    #  retrieve keypoints from socket
+    def get_keypoints(self):
+        # Receive keypoints from socket
+        wp_dict = self.sr.receive_keypoints()
+        return wp_dict
+
     ##  method get_angles
     #
     #   Get angles from socket and calculate joint angles
-    def get_angles(self):
+    def get_angles(self, wp_dict):
         try:
 
             # LShoulderPitch and LShoulderRoll needed keypoints
@@ -389,9 +397,6 @@ class KeypointsToAngles:
 
             # Init angles
             LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
-
-            # Receive keypoints from socket
-            wp_dict = self.sr.receive_keypoints()
 
             # Invert right arm with left arm
             wp_dict = self.invert_right_left(wp_dict) 

@@ -246,7 +246,20 @@ class PepperApproachControl(Thread):
                    out,
                    delimiter =", ", 
                    fmt ='% s')
-       
+    
+    ## function store_keypoints
+    #
+    #  save the keypoints in a file with timestamp
+    def store_keypoints(self, wp_dict, filename):
+        # if wp_dict:
+        temp_dict = wp_dict.copy()
+        temp_dict['timestamp'] = datetime.now().strftime('%H:%M:%S.%f')
+        file = filename + '/keypoints_received.txt'
+        # print(file)
+        with open(file,'a') as f: 
+            f.write(str(temp_dict))
+            f.write("\n")
+
     ##  function joints_control
     #
     #   This function uses the setAngles and setStiffnesses methods
@@ -352,7 +365,8 @@ class PepperApproachControl(Thread):
         HP_arr_robot = []
         
         time_arr = []
-        timestamp_arr = []
+        timestamp_arr_start = []
+        timestamp_arr_end = []
         
         # Initialize time counter
         t1 = time.time()
@@ -373,30 +387,51 @@ class PepperApproachControl(Thread):
         ## SEND SIGNAL TO SAVE KEYPOINTS WITH TIMESTAMPS
         self.sock_send.send('Start')
         
+        # show plots of the joints angles
+        if self.show_plot:
+            now = datetime.now()
+            # dd/mm/YY H:M:S
+            dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
+            
+            if not os.path.exists("angles_data"):
+                os.mkdir("angles_data")
+                
+            path = "angles_data/" + dt_string
+            try:
+                os.mkdir(path)
+            except OSError:
+                print ("Creation of the directory %s failed" % path)
+        
         # Start loop to receive angles and control Pepper joints
         while KtA.start_flag and not self.loop_interrupted:
-            try:    
+            try:  
+                # Get keypoints from OpenPose
+                wp_dict = KtA.get_keypoints()  
+                
+                # Save received keypoints
+                self.store_keypoints(wp_dict, path)
+                
                 # Get angles from keypoints
                 self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
                 self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
-                self.HipPitch = KtA.get_angles()
+                self.HipPitch = KtA.get_angles(wp_dict)
                 
                 # Update time elapsed and timestamp
                 t = time.time()
-                self.timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                self.timestamp = datetime.now().strftime('%H:%M:%S.%f')
                 self.time_elapsed = t - t1
+                
+                # if self.time_elapsed > 2.0:
+                time_arr.append(self.time_elapsed)
+                timestamp_arr_start.append(self.timestamp)
 
                 # Saturate angles to avoid exceding Pepper limits
                 self.saturate_angles(memProxy, self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
                                                self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
                                                self.HipPitch)
-                
-                if self.time_elapsed > 2.0:
-                    time_arr.append(self.time_elapsed)
-                    timestamp_arr.append(self.timestamp)
-                
+  
                 # Store raw angles lists for plots
-                if self.show_plot and self.time_elapsed > 2.0:
+                if self.show_plot: # and self.time_elapsed > 2.0:
                     LSP_arr.append(self.LShoulderPitch)
                     LSR_arr.append(self.LShoulderRoll)
                     LEY_arr.append(self.LElbowYaw)
@@ -424,7 +459,7 @@ class PepperApproachControl(Thread):
                 self.HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [self.HipPitch], zi=z_HP)
                 
                 # Store filtered angles for plots
-                if self.show_plot and self.time_elapsed > 2.0:
+                if self.show_plot: # and self.time_elapsed > 2.0:
                     LSP_arr_filt.append(self.LShoulderPitch[0])
                     LSR_arr_filt.append(self.LShoulderRoll[0])
                     LEY_arr_filt.append(self.LElbowYaw[0])
@@ -446,25 +481,27 @@ class PepperApproachControl(Thread):
                 if self.time_elapsed > 2.0:
                     motion_service.setAngles(names, angles, fractionMaxSpeed)
                     
-                    # Store robot angles lists for plots
-                    if self.show_plot:
-                        LSP_arr_robot.append(memProxy.getData("Device/SubDeviceList/LShoulderPitch/Position/Sensor/Value"))
-                        LSR_arr_robot.append(memProxy.getData("Device/SubDeviceList/LShoulderRoll/Position/Sensor/Value"))
-                        LEY_arr_robot.append(memProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Sensor/Value"))
-                        LER_arr_robot.append(memProxy.getData("Device/SubDeviceList/LElbowRoll/Position/Sensor/Value"))
+                # Store robot angles lists for plots
+                if self.show_plot:
+                    LSP_arr_robot.append(memProxy.getData("Device/SubDeviceList/LShoulderPitch/Position/Sensor/Value"))
+                    LSR_arr_robot.append(memProxy.getData("Device/SubDeviceList/LShoulderRoll/Position/Sensor/Value"))
+                    LEY_arr_robot.append(memProxy.getData("Device/SubDeviceList/LElbowYaw/Position/Sensor/Value"))
+                    LER_arr_robot.append(memProxy.getData("Device/SubDeviceList/LElbowRoll/Position/Sensor/Value"))
 
-                        RSP_arr_robot.append(memProxy.getData("Device/SubDeviceList/RShoulderPitch/Position/Sensor/Value"))
-                        RSR_arr_robot.append(memProxy.getData("Device/SubDeviceList/RShoulderRoll/Position/Sensor/Value"))
-                        REY_arr_robot.append(memProxy.getData("Device/SubDeviceList/RElbowYaw/Position/Sensor/Value"))
-                        RER_arr_robot.append(memProxy.getData("Device/SubDeviceList/RElbowRoll/Position/Sensor/Value"))
+                    RSP_arr_robot.append(memProxy.getData("Device/SubDeviceList/RShoulderPitch/Position/Sensor/Value"))
+                    RSR_arr_robot.append(memProxy.getData("Device/SubDeviceList/RShoulderRoll/Position/Sensor/Value"))
+                    REY_arr_robot.append(memProxy.getData("Device/SubDeviceList/RElbowYaw/Position/Sensor/Value"))
+                    RER_arr_robot.append(memProxy.getData("Device/SubDeviceList/RElbowRoll/Position/Sensor/Value"))
 
-                        HP_arr_robot.append(memProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value"))
+                    HP_arr_robot.append(memProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value"))
 
-                
-                     
                 # Check if the queue was updated
                 if not self.queue_in.empty():
                     self.loop_interrupted = self.queue_in.get(block=False, timeout=None)
+                
+                # if self.time_elapsed > 2.0:
+                # fill timestamp array of the end loop
+                timestamp_arr_end.append(datetime.now().strftime('%H:%M:%S.%f'))
             
             # If the user stops the script with CTRL+C, interrupt loop
             except KeyboardInterrupt:
@@ -484,51 +521,55 @@ class PepperApproachControl(Thread):
                
         # show plots of the joints angles
         if self.show_plot:
-            now = datetime.now()
-            # dd/mm/YY H:M:S
-            dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
+            # now = datetime.now()
+            # # dd/mm/YY H:M:S
+            # dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
             
-            if not os.path.exists("angles_data"):
-                os.mkdir("angles_data")
+            # if not os.path.exists("angles_data"):
+            #     os.mkdir("angles_data")
                 
-            path = "angles_data/" + dt_string
-            try:
-                os.mkdir(path)
+            # path = "angles_data/" + dt_string
+            # try:
+            #     os.mkdir(path)
                 
-                # # Plot joint angles
-                # self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, path)
-                # self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, path)
-                # self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', self.time_elapsed, path)
-                # self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', self.time_elapsed, path)
+            # # Plot joint angles
+            # self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, path)
+            # self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, path)
+            # self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', self.time_elapsed, path)
+            # self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', self.time_elapsed, path)
 
-                # self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', self.time_elapsed, path)
-                # self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', self.time_elapsed, path)
-                # self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', self.time_elapsed, path)
-                # self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', self.time_elapsed, path)
+            # self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', self.time_elapsed, path)
+            # self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', self.time_elapsed, path)
+            # self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', self.time_elapsed, path)
+            # self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', self.time_elapsed, path)
 
-                # self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  self.time_elapsed, path)
-                
-                # Plot joint angles
-                self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', time_arr, path)
-                self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', time_arr, path)
-                self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', time_arr, path)
-                self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', time_arr, path)
+            # self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  self.time_elapsed, path)
+            
+            # Plot joint angles
+            self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', time_arr, path)
+            self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', time_arr, path)
+            self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', time_arr, path)
+            self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', time_arr, path)
 
-                self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', time_arr, path)
-                self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', time_arr, path)
-                self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', time_arr, path)
-                self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', time_arr, path)
+            self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', time_arr, path)
+            self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', time_arr, path)
+            self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', time_arr, path)
+            self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', time_arr, path)
 
-                self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  time_arr, path)
+            self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  time_arr, path)
+            
+            with open(path + '/timestamps_start_loop.csv', 'w') as f: 
+                write = csv.writer(f) 
+                write.writerow(timestamp_arr_start) 
+            
+            with open(path + '/timestamps_end_loop.csv', 'w') as f: 
+                write = csv.writer(f) 
+                write.writerow(timestamp_arr_end) 
+            
+            self.sock_send.close()
                 
-                with open(path + '/timestamps.csv', 'w') as f: 
-                    write = csv.writer(f) 
-                    write.writerow(timestamp_arr) 
-                
-                self.sock_send.close()
-                
-            except OSError:
-                print ("Creation of the directory %s failed" % path)
+            # except OSError:
+            #     print ("Creation of the directory %s failed" % path)
             
             
 # Main 
