@@ -521,17 +521,6 @@ class PepperApproachControl(Thread):
                
         # show plots of the joints angles
         if self.show_plot:
-            # now = datetime.now()
-            # # dd/mm/YY H:M:S
-            # dt_string = now.strftime("%d_%m_%Y_%H-%M-%S")
-            
-            # if not os.path.exists("angles_data"):
-            #     os.mkdir("angles_data")
-                
-            # path = "angles_data/" + dt_string
-            # try:
-            #     os.mkdir(path)
-                
             # # Plot joint angles
             # self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, path)
             # self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, path)

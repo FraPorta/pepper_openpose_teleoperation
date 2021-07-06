@@ -9,7 +9,6 @@ from PIL import ImageTk, Image
 
 from GUI_material.image_label import ImageLabel
 from speech_thread import SpeechThread
-from ok_pepper_thread import OkPepperThread
 from pepper_approach_control_thread import PepperApproachControl
 from Queue import Queue
 
@@ -35,15 +34,9 @@ class PepperGui:
         self.q_speech = Queue()
         self.q_record = Queue()
         
-        self.q_button = Queue()
-        
         self.q_pepper = Queue()
         self.q_appr_teleop = Queue()
         self.st = None
-        
-        # Init voice recognition for pressing buttons
-        self.ok_pepper = OkPepperThread(self.q_button)
-        self.ok_pepper.start()
         
         font='Roboto-Medium'
         # font='Gotham'
@@ -238,7 +231,7 @@ class PepperGui:
                                 disabledbackground=darkest_red,
                                 width=13,
                                 relief=tk.FLAT)
-        self.text_ip.insert(tk.END, "130.251.13.110")
+        self.text_ip.insert(tk.END, "130.251.13.108")
         self.text_ip.place(x=476, y=390)
         
         self.lbl_ip = tk.Label(self.master,
@@ -301,7 +294,7 @@ class PepperGui:
                 self.lbl_conn.place_forget()
                 
                 # Create Speech Thread
-                self.st = SpeechThread(self.session, self.q_speech, self.q_record, self.q_button)
+                self.st = SpeechThread(self.session, self.q_speech, self.q_record)
                 # Start Speech recognition Thread
                 self.st.start()
     
@@ -411,6 +404,9 @@ class PepperGui:
         self.gif.pack()
         self.gif.place(x=257, y=74)
         self.gif.load('GUI_material/voice_transp_frame.gif')
+        # self.gif.place_forget()
+        # self.gif.grid_forget()
+        # self.gif.pack_forget()
         self.btn_rec.configure(text="Start Talking", command=self.start_talk)
 
     ## method on_closing
@@ -442,27 +438,11 @@ class PepperGui:
             # Show recognized text
             if text is not None:
                 self.txt.configure(text=text)
-                
-        # If the queue is not empty get the messages from approach/teleop
+        
         if not self.q_appr_teleop.empty():
             string = self.q_appr_teleop.get(block=False, timeout=None)
             if string is not None:
                 self.txt_pepper.configure(text=string)
-        
-        # If the queue is not empty get the messages for pressing the buttons with voice commands
-        if not self.q_button.empty():
-            command = self.q_button.get(block=False, timeout=None)
-            if command is not None:
-                if command == 'connect':
-                    self.btn_connect.invoke()
-                elif command == 'stop talking' and self.btn_rec.cget('text') == "Stop Talking":
-                    self.btn_rec.invoke()
-                elif command == 'start talking' and self.btn_rec.cget('text') == "Start Talking":
-                    self.btn_rec.invoke()
-                elif command == 'start pepper' and self.btn_rec.cget('text') == "Start Pepper":
-                    self.btn_pepper.invoke()
-                elif command == 'stop pepper' and self.btn_rec.cget('text') == "Stop Pepper":
-                    self.btn_pepper.invoke()
                     
         self.master.after(500, func=self.check_queue)
 

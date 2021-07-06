@@ -12,11 +12,13 @@ import speech_recognition as sr
 from threading import Thread
 
 class OkPepperThread(Thread):
-    def __init__(self):
+    def __init__(self, q_button):
         # self.session = session
         self.text = None
         self.rec = False
         self.is_running = True
+        
+        self.q_button = q_button
         
         # Speech recognizer  
         self.r = sr.Recognizer()
@@ -39,14 +41,22 @@ class OkPepperThread(Thread):
             
             self.text = self.recognize()
             if self.text is not None:
-                # print(self.text)
-                if self.text == 'ok Google':
-                    print(self.text)
+                # text to lower case
+                txt = self.text.lower()
+                print(txt)
+                
+                if txt == 'connect':
+                    self.q_button.put(txt)
+                elif txt == 'start talking':
+                    self.q_button.put(txt)
+                elif txt == 'start peppa':
+                    self.q_button.put('start pepper')
+                
+
                 # notify the GUI that the keyword was recognized
                 # self.q.put(self.text)
-            time.sleep(0.1)
             
-        print("Speech thread terminated correctly")
+        print("OkPepper thread terminated correctly")
         
     ## method recognize
     #
