@@ -128,13 +128,13 @@ class SpeechThread(Thread):
                         self.motion.setStiffnesses("HeadPitch", 1)
                         # self.motion.setStiffnesses("HeadPitch", 1)
                         names = ['HeadPitch']
-                        angles = [angle/2]
+                        angles = [-angle/2]
                         self.motion.setAngles(names, angles, 0.15)       
                     elif txt == 'watch down' or txt == 'look down':
                         self.motion.setStiffnesses("HeadPitch", 1)
                         # self.motion.setStiffnesses("HeadPitch", 1)
                         names = ['HeadPitch']
-                        angles = [-angle/2]
+                        angles = [angle/2]
                         self.motion.setAngles(names, angles, 0.15)       
                     else:
                         # Repeat the recognized text
