@@ -28,7 +28,7 @@ class SpeechThread(Thread):
         
         # Call the Thread class's init function
         Thread.__init__(self)
-
+        print("SpeechThread started")
         # Get the service ALTextToSpeech.
         self.tts = self.session.service("ALTextToSpeech")
         self.motion = self.session.service("ALMotion")
@@ -38,9 +38,9 @@ class SpeechThread(Thread):
         # time to perform the movements
         t = 3
         # distance covered by every movement
-        d = 0.25
+        d = 0.4
         # angle of rotation
-        angle = 0.261799 
+        angle = 0.261799*2
         
         # main loop
         while self.is_running:
@@ -52,6 +52,7 @@ class SpeechThread(Thread):
                 elif command == "StopRec":
                     self.rec = False
                 elif command == "StopRun":
+                    self.rec = False
                     self.is_running = False
                     
             # Voice recognition
@@ -61,28 +62,32 @@ class SpeechThread(Thread):
                     # text to lower case
                     txt = self.text.lower()
                     
-                    # Some vocal commands to control Pepper position 
+                    # Voice commands to control Pepper position and the GUI
                     if txt == 'move forward' or txt == 'go forward':
                         x = d
                         y = 0.0
                         theta = 0.0
                         self.motion.moveTo(x, y, theta, t)
                         
-                    elif txt == 'move backwards' or txt == 'go backwards':
+                    elif txt == 'move backwards' or txt == 'go backwards' or\
+                         txt == 'move backward' or txt == 'go backward' or\
+                         txt == 'move back' or txt == 'go back':
                         x = -d
                         y = 0.0
                         theta = 0.0
                         self.motion.moveTo(x, y, theta, t)
 
-                    elif txt == 'move right' or txt == 'go right':
+                    elif txt == 'move right' or txt == 'go right' or\
+                         txt == 'move to the right' or txt == 'go to the right':
                         x = 0.0
-                        y = d
+                        y = -d
                         theta = 0.0                         
                         self.motion.moveTo(x, y, theta, t)
 
-                    elif txt == 'move left' or txt == 'go left':
+                    elif txt == 'move left' or txt == 'go left' or\
+                         txt == 'move to the left' or txt == 'go to the left':
                         x = 0.0
-                        y = -d
+                        y = d
                         theta = 0.0
                         self.motion.moveTo(x, y, theta, t)
                         
@@ -101,15 +106,45 @@ class SpeechThread(Thread):
                     elif txt == 'stop talking':
                         self.q_button.put(txt)
                     
-                    elif txt == 'stop pepper':
+                    elif txt == 'start pepper' or txt == 'start robot' or txt == 'start moving':
+                        self.q_button.put('start pepper')
+                    
+                    elif txt == 'stop pepper' or txt == 'stop robot' or txt == 'stop moving':
                         self.q_button.put('stop pepper') 
-                        
+                    
+                    elif txt == 'watch right' or txt == 'look right' or txt == 'luke wright' or txt == 'look to the right':
+                        self.motion.setStiffnesses("HeadYaw", 1)
+                        # self.motion.setStiffnesses("HeadPitch", 1)
+                        names = ['HeadYaw']
+                        angles = [-angle]
+                        self.motion.setAngles(names, angles, 0.15)     
+                    elif txt == 'watch left' or txt == 'look left' or txt == 'look to the left':
+                        self.motion.setStiffnesses("HeadYaw", 1)
+                        # self.motion.setStiffnesses("HeadPitch", 1)
+                        names = ['HeadYaw']
+                        angles = [angle]
+                        self.motion.setAngles(names, angles, 0.15)   
+                    elif txt == 'watch up' or txt == 'look up':
+                        self.motion.setStiffnesses("HeadPitch", 1)
+                        # self.motion.setStiffnesses("HeadPitch", 1)
+                        names = ['HeadPitch']
+                        angles = [angle/2]
+                        self.motion.setAngles(names, angles, 0.15)       
+                    elif txt == 'watch down' or txt == 'look down':
+                        self.motion.setStiffnesses("HeadPitch", 1)
+                        # self.motion.setStiffnesses("HeadPitch", 1)
+                        names = ['HeadPitch']
+                        angles = [-angle/2]
+                        self.motion.setAngles(names, angles, 0.15)       
                     else:
                         # Repeat the recognized text
                         self.tts.say(self.text)
                         
                     # Put text in a queue for the GUI
                     self.q_text.put(self.text) 
+            else:
+                if self.is_running: 
+                    time.sleep(0.5)
                      
         # self.q_text.put("Speech thread terminated correctly")            
         print("Speech thread terminated correctly")
@@ -124,7 +159,7 @@ class SpeechThread(Thread):
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=2)
+                self.audio = self.r.listen(source, timeout=None)
 
                 # received audio data, recognize it using Google Speech Recognition
                 recognized_text = self.r.recognize_google(self.audio, language="en-EN")
@@ -132,7 +167,8 @@ class SpeechThread(Thread):
             except sr.WaitTimeoutError:
                 pass
             except sr.UnknownValueError:
-                print("Google Speech Recognition could not understand audio")
+                pass
+                # print("Google Speech Recognition could not understand audio")
             except sr.RequestError as e:
                 print("Could not request results from Google Speech Recognition service; {0}".format(e))
 

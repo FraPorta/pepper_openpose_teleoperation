@@ -36,14 +36,18 @@ class PepperGui:
         self.q_record = Queue()
         
         self.q_button = Queue()
+        self.q_stop = Queue()
         
         self.q_pepper = Queue()
         self.q_appr_teleop = Queue()
         self.st = None
+        self.pac = None
         
         # Init voice recognition for pressing buttons
-        self.ok_pepper = OkPepperThread(self.q_button)
+        self.ok_pepper = OkPepperThread(self.q_button, self.q_stop)
         self.ok_pepper.start()
+        # Start the voice recognition recording for button pressing
+        self.q_stop.put("Rec")
         
         font='Roboto-Medium'
         # font='Gotham'
@@ -56,7 +60,6 @@ class PepperGui:
         light_red = '#eb9ea0'
         orange = '#ec5633'
 
-        
         # Master init
         self.master.title("Pepper Control")
         self.master.geometry("1000x562")
@@ -94,7 +97,7 @@ class PepperGui:
         
         # Button start pepper approach and teleoperation
         self.btn_pepper = tk.Button(self.master, 
-                                    text="Start Pepper",
+                                    text="Start Moving",
                                     bg=darkest_red,
                                     fg='white',
                                     font=(font, btn_txt_size),
@@ -111,7 +114,7 @@ class PepperGui:
         
         # Button connect to Pepper
         self.btn_connect = tk.Button(self.master, 
-                                    text="Connect to Pepper",
+                                    text="Connect",
                                     bg=orange,
                                     fg='white',
                                     font=(font, btn_txt_size),
@@ -188,7 +191,7 @@ class PepperGui:
                                  wraplength=0,
                                  relief=tk.FLAT)
         self.lbl_conn.place(x=358, y=520)
-        self.lbl_conn.configure(text="Press the button to connect")
+        self.lbl_conn.configure(text="Press the button or say 'connect'")
         
         # CheckBoxes
         y=160
@@ -266,6 +269,7 @@ class PepperGui:
         self.lbl_port.place(x=395, y=410)
         self.lbl_port.configure(text="Port")  
     
+    
     ## method connect_pepper
     #
     #  Starts the Session with given Ip and Port
@@ -328,7 +332,7 @@ class PepperGui:
             self.pac.start()
             
             # Change button text and command
-            self.btn_pepper.configure(text="Stop Pepper", command=self.stop_pepper)
+            self.btn_pepper.configure(text="Stop Moving", command=self.stop_pepper)
             
         elif self.approach.get() == 0 and self.teleop.get() == 1:
             # Show gif
@@ -345,7 +349,7 @@ class PepperGui:
             self.pac.start()
             
             # Change button text and command
-            self.btn_pepper.configure(text="Stop Pepper", command=self.stop_pepper)
+            self.btn_pepper.configure(text="Stop Moving", command=self.stop_pepper)
             
         elif self.approach.get() == 1 and self.teleop.get() == 0:
             # Show gif
@@ -362,7 +366,7 @@ class PepperGui:
             self.pac.start()
             
             # Change button text and command
-            self.btn_pepper.configure(text="Stop Pepper", command=self.stop_pepper)
+            self.btn_pepper.configure(text="Stop Moving", command=self.stop_pepper)
         else:
             self.txt_pepper.configure(text="Please select at least one between Search User and Teleoperate")
             
@@ -382,7 +386,7 @@ class PepperGui:
         self.gif_load.load(gif_path)
         
         # Change button text and command
-        self.btn_pepper.configure(text="Start Pepper", command=self.start_pepper)
+        self.btn_pepper.configure(text="Start Moving", command=self.start_pepper)
     
     ## method start_talk
     #
@@ -398,30 +402,51 @@ class PepperGui:
         # Change button text and command
         self.btn_rec.configure(text="Stop Talking", command=self.stop_talk)
         
+        # Stop the other voice recognition thread for button pressing
+        self.q_stop.put("StopRec")
         # Start recording for Speech to text   
         self.q_record.put("Rec")  
+        
 
     ## method stop_talk
     #
     #  Stop recognizing voice and hide microphone gif
     def stop_talk(self):
         self.q_record.put("StopRec")
+        
         self.gif = ImageLabel(self.master)
         self.gif.config(relief="flat", borderwidth=0)
         self.gif.pack()
         self.gif.place(x=257, y=74)
         self.gif.load('GUI_material/voice_transp_frame.gif')
         self.btn_rec.configure(text="Start Talking", command=self.start_talk)
-
+        
+        # Re-init voice recognition for pressing buttons
+        self.q_stop.put("Rec")
+    
     ## method on_closing
     #
     #  Stop speech recognition thread and close the window
     def on_closing(self):
+        # Stop the two Speech Recognition Threads
         self.q_record.put("StopRun")
-        # self.st.is_running = False
+        self.q_stop.put("StopRun")
+        
+        # Wait for the threads to finish before closing the GUI
         if self.st is not None:
             if self.st.is_alive():
                 self.st.join()
+        
+        if self.ok_pepper is not None:
+            if self.ok_pepper.is_alive():
+                self.ok_pepper.join()
+
+        if self.pac is not None:
+            if self.btn_pepper.cget("text") == "Stop Moving":
+                self.btn_pepper.invoke()
+                if self.ok_pepper.is_alive():
+                    self.ok_pepper.join()
+        
         self.master.destroy()
     
     ## method start
@@ -429,13 +454,13 @@ class PepperGui:
     #  Start the mainloop
     def start(self):
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.master.after(500, func=self.check_queue)
+        self.master.after(250, func = self.check_queues)
         self.master.mainloop()
     
     ## method check_queue
     #
     #  Check every half a second if there is an entry in the queue
-    def check_queue(self):
+    def check_queues(self):
         # If the queue is not empty get the recognized text
         if not self.q_speech.empty():
             text = self.q_speech.get(block=False, timeout=None) 
@@ -453,18 +478,19 @@ class PepperGui:
         if not self.q_button.empty():
             command = self.q_button.get(block=False, timeout=None)
             if command is not None:
+                self.txt.configure(text=command)
                 if command == 'connect':
                     self.btn_connect.invoke()
                 elif command == 'stop talking' and self.btn_rec.cget('text') == "Stop Talking":
                     self.btn_rec.invoke()
                 elif command == 'start talking' and self.btn_rec.cget('text') == "Start Talking":
                     self.btn_rec.invoke()
-                elif command == 'start pepper' and self.btn_rec.cget('text') == "Start Pepper":
+                elif command == 'stop pepper' and self.btn_pepper.cget('text') == "Stop Moving":
                     self.btn_pepper.invoke()
-                elif command == 'stop pepper' and self.btn_rec.cget('text') == "Stop Pepper":
+                elif command == 'start pepper' and self.btn_pepper.cget('text') == "Start Moving":
                     self.btn_pepper.invoke()
                     
-        self.master.after(500, func=self.check_queue)
+        self.master.after(250, func=self.check_queues)
 
 if __name__ == '__main__':
     # Start naoqi session

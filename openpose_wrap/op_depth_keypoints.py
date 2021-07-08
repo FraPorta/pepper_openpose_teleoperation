@@ -137,7 +137,7 @@ def display(datums, fps, frame):
     #datum = datums[0]
     color_img = datums.cvOutputData
     
-    color_img = cv2.resize(color_img, (0,0), fx=0.65, fy=0.65) # Resize (1080, 1920, 4) into half (540, 960, 4)
+    color_img = cv2.resize(color_img, (0,0), fx=0.5, fy=0.5) # Resize (1080, 1920, 4) into half (540, 960, 4)
     cv2.putText(color_img, str(fps)+" FPS", (5, 15), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write FPS on image
     cv2.putText(color_img, str(frame)+" frame", (5, 690), cv2.FONT_HERSHEY_SIMPLEX , 0.5, (20, 200, 15), 2, cv2.LINE_AA) # Write frames on image
     cv2.imshow("OpenPose 1.7.0", color_img)
@@ -402,7 +402,7 @@ try:
                     fps = round(1/float(time_elapsed),1)
 
                     # Map color space keypoints to depth space 
-                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, filename, saveKeypoints, display=True)
+                    userWantsToExit = displayDepthKeypoints(datum, depth_frame, fps, frame, filename, saveKeypoints, display=False)
 
                     # Display OpenPose output image
                     userWantsToExit = display(datum, fps, frame)  

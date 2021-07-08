@@ -42,6 +42,7 @@ class PepperApproachControl(Thread):
   
         # Call the Thread class's init function
         Thread.__init__(self)
+        print("PepperApproachControl thread started")
 
     ## method run
     #
