@@ -16,13 +16,20 @@ def main(session):
 
     motion_service  = session.service("ALMotion")
 
-    # Example showing how to get the position of the top camera
-    name            = "LWristYaw"
+    # Get transformation matrix with respect to Robot Torso frame
     frame           = motion.FRAME_TORSO
     useSensorValues = True
-    result          = motion_service.getPosition(name, frame, useSensorValues)
-    print "Position of", name, " in Torso is:"
-    print result
+    
+    name_hand       = "LWristYaw"
+    a_t_T           = motion_service.getPosition(name_hand, frame, useSensorValues)
+    print "Position of", name_hand, " in Torso is:"
+    print a_t_T
+    
+    # Example showing how to get the position of the top camera
+    name_head       = "HeadYaw"
+    h_t_T           = motion_service.getPosition(name_head, frame, useSensorValues)
+    print "Position of", name_head, " in Torso is:"
+    print h_t_T
 
 
 if __name__ == "__main__":

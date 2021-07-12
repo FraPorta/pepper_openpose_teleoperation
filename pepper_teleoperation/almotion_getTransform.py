@@ -8,6 +8,8 @@ import argparse
 import sys
 import motion
 
+import numpy as np
+
 
 def main(session):
     """
@@ -17,27 +19,32 @@ def main(session):
 
     motion_service  = session.service("ALMotion")
 
-    # Example showing how to get the end of the right arm as a transform
-    # represented in torso space. The result is a 4 by 4 matrix composed
-    # of a 3*3 rotation matrix and a column vector of positions.
-    # name  = 'RArm'
-    # frame  = motion.FRAME_TORSO
-    # useSensorValues  = True
-    # result = motion_service.getTransform(name, frame, useSensorValues)
-    # for i in range(0, 4):
-    #     for j in range(0, 4):
-    #         print result[4*i + j],
-    #     print ''
+    # Example showing how to get the end of the right arm and of the head 
+    # as a transform represented in torso space. The result is a 4 by 4
+    # matrix composed of a 3*3 rotation matrix and a column vector of positions.
+    name_arm    = 'RArm'
+    name_head   = 'HeadYaw'
     
-    name  = 'HeadPitch'
-    frame  = motion.FRAME_TORSO
-    
+    frame       = motion.FRAME_TORSO
     useSensorValues  = True
-    result = motion_service.getTransform(name, frame, useSensorValues)
+    
+    a_t_T = motion_service.getTransform(name_arm, frame, useSensorValues)
+    h_t_T = motion_service.getTransform(name_head, frame, useSensorValues)
     for i in range(0, 4):
         for j in range(0, 4):
-            print result[4*i + j],
-        print ''
+            print( a_t_T[4*i + j] ),
+        print('')
+        for j in range(0, 4):
+            print( h_t_T[4*i + j] ),
+        print('')
+    
+    # arrange transformation matrix into numpy array 
+    
+    # Invert matrix
+    
+    # multiply to get transformation matrix from head to arm
+    
+    
 
 
 if __name__ == "__main__":
