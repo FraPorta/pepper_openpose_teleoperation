@@ -249,7 +249,7 @@ class ApproachUser():
         # BasicAwareness	    Allows the robot to react to the environment to establish and keep eye contact with people.	ALBasicAwareness
         # ListeningMovement	    Enables some slight movements showing that the robot is listening.	ALListeningMovement
         # SpeakingMovement      Enables to start autonomously movements during the speech of the robot.	ALSpeakingMovement
-        # self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+        self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
         self.life_service.setAutonomousAbilityEnabled("BackgroundMovement", False)
         self.life_service.setAutonomousAbilityEnabled("ListeningMovement", False)
         self.life_service.setAutonomousAbilityEnabled("SpeakingMovement", False)
