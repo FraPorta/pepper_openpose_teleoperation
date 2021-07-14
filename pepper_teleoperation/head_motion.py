@@ -35,11 +35,11 @@ class HeadMotionThread(Thread):
         
         # filter init
         # Filter parameters 
-        fs = 5.3            # sample rate, Hz
+        fs  = 15            # sample rate, Hz
         nyq = 0.5 * fs      # Nyquist Frequency
         
-        cutoff = 0.7        # desired cutoff frequency of the filter, Hz 
-        order = 1           # filter order
+        cutoff        = 1            # desired cutoff frequency of the filter, Hz 
+        order         = 1               # filter order
         normal_cutoff = cutoff / nyq    # Cutoff freq for lowpass filter
 
         # Filter poles
@@ -55,9 +55,11 @@ class HeadMotionThread(Thread):
         print("HeadMotionThread started")
     
     def run(self):
+        
         # main loop
         while self.is_running:
             if self.e_arm.isSet():
+                
                 self.follow_arm()
             else:
                 self.e_arm.wait()
@@ -77,6 +79,8 @@ class HeadMotionThread(Thread):
             self.motion_service.setStiffnesses("HeadPitch", stiffness)
             
         self.first_time = False
+        
+        # t0 = time.time()
         
         # Get the end of the right arm and of the head 
         # as a transform represented in torso space. The result is a 4 by 4
@@ -113,6 +117,12 @@ class HeadMotionThread(Thread):
         # print("Pitch: ", pitch * 180/np.pi)
         
         self.motion_service.setAngles(self.names, [float(yaw), float(pitch)], 0.1)
+        
+        # t1 = time.time()
+        
+        # time_elapsed = t1 - t0
+        
+        # print("fs: ", 1/time_elapsed)
 
     ## method disable_autonomous_movements
     #

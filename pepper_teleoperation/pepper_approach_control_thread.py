@@ -525,19 +525,6 @@ class PepperApproachControl(Thread):
                
         # show plots of the joints angles
         if self.show_plot:
-            # # Plot joint angles
-            # self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', self.time_elapsed, path)
-            # self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', self.time_elapsed, path)
-            # self.save_data(LEY_arr, LEY_arr_filt, LEY_arr_robot, 'LEY', self.time_elapsed, path)
-            # self.save_data(LER_arr, LER_arr_filt, LER_arr_robot, 'LER', self.time_elapsed, path)
-
-            # self.save_data(RSP_arr, RSP_arr_filt, RSP_arr_robot, 'RSP', self.time_elapsed, path)
-            # self.save_data(RSR_arr, RSR_arr_filt, RSR_arr_robot, 'RSR', self.time_elapsed, path)
-            # self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', self.time_elapsed, path)
-            # self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', self.time_elapsed, path)
-
-            # self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  self.time_elapsed, path)
-            
             # Plot joint angles
             self.save_data(LSP_arr, LSP_arr_filt, LSP_arr_robot, 'LSP', time_arr, path)
             self.save_data(LSR_arr, LSR_arr_filt, LSR_arr_robot, 'LSR', time_arr, path)
@@ -560,10 +547,6 @@ class PepperApproachControl(Thread):
                 write.writerow(timestamp_arr_end) 
             
             self.sock_send.close()
-                
-            # except OSError:
-            #     print ("Creation of the directory %s failed" % path)
-            
             
 # Main 
 if __name__ == "__main__":

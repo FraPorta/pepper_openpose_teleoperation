@@ -123,6 +123,7 @@ class SpeechThread(Thread):
                         self.q_button.put('stop pepper') 
                     
                     elif txt == 'watch right' or txt == 'look right' or txt == 'luke wright' or txt == 'look to the right':
+                        self.life_service.stopFocus()
                         # stop arm tracking
                         self.arm_tracking_event.clear()
                         # stop user tracking
@@ -134,7 +135,8 @@ class SpeechThread(Thread):
                         names = ['HeadYaw']
                         angles = [-angle]
                         self.motion.setAngles(names, angles, 0.15)     
-                    elif txt == 'watch left' or txt == 'look left' or txt == 'look to the left':
+                    elif txt == 'watch left' or txt == 'look left' or txt == 'look to the left' or txt=="luke left":
+                        self.life_service.stopFocus()
                         # stop arm tracking
                         self.arm_tracking_event.clear()
                         # stop user tracking
@@ -147,7 +149,8 @@ class SpeechThread(Thread):
                         angles = [angle]
                         self.motion.setAngles(names, angles, 0.15)   
                         
-                    elif txt == 'watch up' or txt == 'look up':
+                    elif txt == 'watch up' or txt == 'look up' or txt == "luke up":
+                        self.life_service.stopFocus()
                         # stop arm tracking
                         self.arm_tracking_event.clear()
                         # stop user tracking
@@ -160,7 +163,8 @@ class SpeechThread(Thread):
                         angles = [-angle/2]
                         self.motion.setAngles(names, angles, 0.15)    
                            
-                    elif txt == 'watch down' or txt == 'look down':
+                    elif txt == 'watch down' or txt == 'look down' or txt == "luke down":
+                        self.life_service.stopFocus()
                         # stop arm tracking
                         self.arm_tracking_event.clear()
                         # stop user tracking
@@ -172,18 +176,38 @@ class SpeechThread(Thread):
                         names = ['HeadPitch']
                         angles = [angle/2]
                         self.motion.setAngles(names, angles, 0.15)    
+                    
+                    elif txt == 'watch ahead' or txt == 'look ahead' or txt == "luke ahead":
+                        self.life_service.stopFocus()
+                        # stop arm tracking
+                        self.arm_tracking_event.clear()
+                        # stop user tracking
+                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                            
+                        # move head down
+                        self.motion.setStiffnesses("HeadPitch", 1)
+                        self.motion.setStiffnesses("HeadYaw", 1)
+                        names = ['HeadYaw', 'HeadPitch']
+                        angles = [0, 0]
+                        self.motion.setAngles(names, angles, 0.15)    
                         
                     elif txt =="track arm" or txt == "follow arm" or txt=="truck arm" or txt == "truck art"  or txt == "track art":
+                        self.life_service.stopFocus()
                         if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
                         self.arm_tracking_event.set()
                         
                     elif txt =="stop tracking" or txt == "stop following" or txt == "stop arm tracking" or txt == "stop arm following":
                         self.arm_tracking_event.clear()
+                    
+                    elif txt =="stop focus":
+                        self.life_service.stopFocus()
                         
                     elif txt =="track user" or txt == "truck user":
                         self.arm_tracking_event.clear()
                         self.life_service.setAutonomousAbilityEnabled("BasicAwareness", True)
+                        self.life_service.stopFocus()
                         
                     else:
                         # Repeat the recognized text

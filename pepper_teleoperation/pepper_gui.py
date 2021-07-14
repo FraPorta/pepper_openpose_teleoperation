@@ -239,7 +239,7 @@ class PepperGui:
                                 disabledbackground=darkest_red,
                                 width=13,
                                 relief=tk.FLAT)
-        self.text_ip.insert(tk.END, "130.251.13.131")
+        self.text_ip.insert(tk.END, "130.251.13.139")
         self.text_ip.place(x=476, y=390)
         
         self.lbl_ip = tk.Label(self.master,
@@ -390,6 +390,9 @@ class PepperGui:
     #
     #  Button callback to start talking
     def start_talk(self):
+        # Stop the other voice recognition thread for button pressing
+        self.q_stop.put("StopRec")
+        
         # Show gif
         self.gif = ImageLabel(self.master)
         self.gif.config(relief="flat", borderwidth=0)
@@ -400,8 +403,7 @@ class PepperGui:
         # Change button text and command
         self.btn_rec.configure(text="Stop Talking", command=self.stop_talk)
         
-        # Stop the other voice recognition thread for button pressing
-        self.q_stop.put("StopRec")
+        
         # Start recording for Speech to text   
         self.q_record.put("Rec")  
         
