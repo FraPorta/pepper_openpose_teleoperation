@@ -42,6 +42,7 @@ class SpeechThread(Thread):
         self.tts = self.session.service("ALTextToSpeech")
         self.motion = self.session.service("ALMotion")
         self.life_service = self.session.service("ALAutonomousLife")
+        self.blink_service = self.session.service("ALAutonomousBlinking")
     
     # Override the run() function of Thread class
     def run(self):
@@ -72,6 +73,10 @@ class SpeechThread(Thread):
                     # text to lower case
                     txt = self.text.lower()
                     
+                    # disable autonomous blinking if activated
+                    if self.blink_service.isEnabled():
+                            self.blink_service.setEnabled(False)
+                            
                     # Voice commands to control Pepper position and the GUI
                     if txt == 'move forward' or txt == 'go forward':
                         x = d
@@ -123,9 +128,12 @@ class SpeechThread(Thread):
                         self.q_button.put('stop pepper') 
                     
                     elif txt == 'watch right' or txt == 'look right' or txt == 'luke wright' or txt == 'look to the right':
-                        self.life_service.stopFocus()
+                        self.life_service.stopAll()
+                        # self.life_service.setState('disabled')
                         # stop arm tracking
-                        self.arm_tracking_event.clear()
+                        if self.arm_tracking_event.is_set():
+                            self.arm_tracking_event.clear()
+                        
                         # stop user tracking
                         if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
@@ -136,9 +144,11 @@ class SpeechThread(Thread):
                         angles = [-angle]
                         self.motion.setAngles(names, angles, 0.15)     
                     elif txt == 'watch left' or txt == 'look left' or txt == 'look to the left' or txt=="luke left":
-                        self.life_service.stopFocus()
+                        self.life_service.stopAll()
+                        # self.life_service.setState('disabled')
                         # stop arm tracking
-                        self.arm_tracking_event.clear()
+                        if self.arm_tracking_event.is_set():
+                            self.arm_tracking_event.clear()
                         # stop user tracking
                         if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
@@ -150,9 +160,12 @@ class SpeechThread(Thread):
                         self.motion.setAngles(names, angles, 0.15)   
                         
                     elif txt == 'watch up' or txt == 'look up' or txt == "luke up":
-                        self.life_service.stopFocus()
+                        self.life_service.stopAll()
+                        # self.life_service.setState('disabled')
                         # stop arm tracking
-                        self.arm_tracking_event.clear()
+                        if self.arm_tracking_event.is_set():
+                            self.arm_tracking_event.clear()
+                        
                         # stop user tracking
                         if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
@@ -164,9 +177,11 @@ class SpeechThread(Thread):
                         self.motion.setAngles(names, angles, 0.15)    
                            
                     elif txt == 'watch down' or txt == 'look down' or txt == "luke down":
-                        self.life_service.stopFocus()
+                        self.life_service.stopAll()
+                        # self.life_service.setState('disabled')
                         # stop arm tracking
-                        self.arm_tracking_event.clear()
+                        if self.arm_tracking_event.is_set():
+                            self.arm_tracking_event.clear()
                         # stop user tracking
                         if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
@@ -178,9 +193,11 @@ class SpeechThread(Thread):
                         self.motion.setAngles(names, angles, 0.15)    
                     
                     elif txt == 'watch ahead' or txt == 'look ahead' or txt == "luke ahead":
-                        self.life_service.stopFocus()
+                        self.life_service.stopAll()
+                        # self.life_service.setState('disabled')
                         # stop arm tracking
-                        self.arm_tracking_event.clear()
+                        if self.arm_tracking_event.is_set():
+                            self.arm_tracking_event.clear()
                         # stop user tracking
                         if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
@@ -193,22 +210,24 @@ class SpeechThread(Thread):
                         self.motion.setAngles(names, angles, 0.15)    
                         
                     elif txt =="track arm" or txt == "follow arm" or txt=="truck arm" or txt == "truck art"  or txt == "track art":
-                        self.life_service.stopFocus()
+                        self.life_service.stopAll()
+                        # self.life_service.setState('disabled')
                         if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
-                        self.arm_tracking_event.set()
+                        if not self.arm_tracking_event.is_set():
+                            self.arm_tracking_event.set()
                         
                     elif txt =="stop tracking" or txt == "stop following" or txt == "stop arm tracking" or txt == "stop arm following":
-                        self.arm_tracking_event.clear()
-                    
-                    elif txt =="stop focus":
-                        self.life_service.stopFocus()
+                        if self.arm_tracking_event.is_set():
+                            self.arm_tracking_event.clear()
                         
                     elif txt =="track user" or txt == "truck user":
-                        self.arm_tracking_event.clear()
+                        if self.arm_tracking_event.is_set():
+                            self.arm_tracking_event.clear()
                         self.life_service.setAutonomousAbilityEnabled("BasicAwareness", True)
-                        self.life_service.stopFocus()
                         
+                    elif txt == 'stop focus':
+                        self.life_service.stopAll()
                     else:
                         # Repeat the recognized text
                         self.tts.say(self.text)
@@ -246,15 +265,12 @@ class SpeechThread(Thread):
                 pass
             except sr.UnknownValueError:
                 pass
-                # print("Google Speech Recognition could not understand audio")
             except sr.RequestError as e:
                 print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
         return recognized_text
     
     
-        
-        
 # Main initialization
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -282,72 +298,4 @@ if __name__ == "__main__":
     st.start()
     
     st.join()
-    
-    
-    '''
-    # Override the run() function of Thread class
-    def run(self):
-        # mics = self.list_working_microphones()
-        # print(mics)
-        # if mics:
-        while self.is_running:
-            if not self.q_rec.empty():
-                command = self.q_rec.get(block=False, timeout= None)
-                if command == "Rec":
-                    self.rec = True
-                elif command == "StopRec":
-                    self.rec = False
-                elif command == "StopRun":
-                    self.is_running = False
-            
-            if self.rec:
-                self.text = self.recognize()
-                if self.text is not None:
-                    self.tts.say(self.text)
-                    self.q.put(self.text)
-            time.sleep(0.1)
-            
-        print("Speech thread terminated correctly")
-        # else:
-        #     print("No Working mics)
-        
-    
-    def list_working_microphones(self):
-        """
-        Returns a dictionary mapping device indices to microphone names, for microphones that are currently hearing sounds. When using this function, ensure that your microphone is unmuted and make some noise at it to ensure it will be detected as working.
-        Each key in the returned dictionary can be passed to the ``Microphone`` constructor to use that microphone. For example, if the return value is ``{3: "HDA Intel PCH: ALC3232 Analog (hw:1,0)"}``, you can do ``Microphone(device_index=3)`` to use that microphone.
-        """
-        pyaudio_module = sr.Microphone.get_pyaudio()
-        audio = pyaudio_module.PyAudio()
-        try:
-            result = {}
-            for device_index in range(audio.get_device_count()):
-                device_info = audio.get_device_info_by_index(device_index)
-                device_name = device_info.get("name")
-                assert isinstance(device_info.get("defaultSampleRate"), (float, int)) and device_info["defaultSampleRate"] > 0, "Invalid device info returned from PyAudio: {}".format(device_info)
-                try:
-                    # read audio
-                    pyaudio_stream = audio.open(
-                        input_device_index=device_index, channels=1, format=pyaudio_module.paInt16,
-                        rate=int(device_info["defaultSampleRate"]), input=True
-                    )
-                    try:
-                        buffer = pyaudio_stream.read(1024)
-                        if not pyaudio_stream.is_stopped(): pyaudio_stream.stop_stream()
-                    finally:
-                        pyaudio_stream.close()
-                except Exception:
-                    continue
-
-                # compute RMS of debiased audio
-                energy = -audioop.rms(buffer, 2)
-                energy_bytes = chr(energy & 0xFF) + chr((energy >> 8) & 0xFF) if bytes is str else bytes([energy & 0xFF, (energy >> 8) & 0xFF])  # Python 2 compatibility
-                debiased_energy = audioop.rms(audioop.add(buffer, energy_bytes * (len(buffer) // 2), 2), 2)
-
-                if debiased_energy > 30:  # probably actually audio
-                    result[device_index] = device_name
-        finally:
-            audio.terminate()
-        return result
-    '''
     

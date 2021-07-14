@@ -59,9 +59,9 @@ class HeadMotionThread(Thread):
         # main loop
         while self.is_running:
             if self.e_arm.isSet():
-                
                 self.follow_arm()
             else:
+                print("Not tracking arm")
                 self.e_arm.wait()
             if self.e_stop.isSet():
                 self.is_running = False
