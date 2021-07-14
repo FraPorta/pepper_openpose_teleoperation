@@ -516,7 +516,10 @@ class PepperApproachControl(Thread):
                 # Stop loop
                 KtA.stop_receiving()
                 # sys.exit(-1)
-                
+        
+        # robot go to Stand Init posture
+        posture_service.goToPosture("StandInit", 0.5)
+         
         # signal to Openpose to stop saving keypoints
         self.sock_send.send('Stop')
                

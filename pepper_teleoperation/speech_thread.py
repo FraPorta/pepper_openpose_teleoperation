@@ -7,9 +7,12 @@ import sys
 import time
 import numpy as np
 import audioop
+import threading
 
 import speech_recognition as sr
 from threading import Thread
+
+from head_motion import HeadMotionThread
 
 class SpeechThread(Thread):
     def __init__(self, session, q, q_rec, q_button):
@@ -22,6 +25,11 @@ class SpeechThread(Thread):
         self.q_rec = q_rec
         
         self.q_button = q_button
+        self.arm_tracking_event = threading.Event()
+        self.stop_event = threading.Event()
+        
+        self.hmt = HeadMotionThread(self.session, self.arm_tracking_event, self.stop_event)
+        self.hmt.start()
         
         # Speech recognizer  
         self.r = sr.Recognizer()
@@ -29,9 +37,11 @@ class SpeechThread(Thread):
         # Call the Thread class's init function
         Thread.__init__(self)
         print("SpeechThread started")
+        
         # Get the service ALTextToSpeech.
         self.tts = self.session.service("ALTextToSpeech")
         self.motion = self.session.service("ALMotion")
+        self.life_service = self.session.service("ALAutonomousLife")
     
     # Override the run() function of Thread class
     def run(self):
@@ -113,29 +123,68 @@ class SpeechThread(Thread):
                         self.q_button.put('stop pepper') 
                     
                     elif txt == 'watch right' or txt == 'look right' or txt == 'luke wright' or txt == 'look to the right':
+                        # stop arm tracking
+                        self.arm_tracking_event.clear()
+                        # stop user tracking
+                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                        # move head right
                         self.motion.setStiffnesses("HeadYaw", 1)
                         # self.motion.setStiffnesses("HeadPitch", 1)
                         names = ['HeadYaw']
                         angles = [-angle]
                         self.motion.setAngles(names, angles, 0.15)     
                     elif txt == 'watch left' or txt == 'look left' or txt == 'look to the left':
+                        # stop arm tracking
+                        self.arm_tracking_event.clear()
+                        # stop user tracking
+                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                        # move head left
                         self.motion.setStiffnesses("HeadYaw", 1)
                         # self.motion.setStiffnesses("HeadPitch", 1)
                         names = ['HeadYaw']
                         angles = [angle]
                         self.motion.setAngles(names, angles, 0.15)   
+                        
                     elif txt == 'watch up' or txt == 'look up':
+                        # stop arm tracking
+                        self.arm_tracking_event.clear()
+                        # stop user tracking
+                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                        # MOVE HEAD UP
                         self.motion.setStiffnesses("HeadPitch", 1)
                         # self.motion.setStiffnesses("HeadPitch", 1)
                         names = ['HeadPitch']
                         angles = [-angle/2]
-                        self.motion.setAngles(names, angles, 0.15)       
+                        self.motion.setAngles(names, angles, 0.15)    
+                           
                     elif txt == 'watch down' or txt == 'look down':
+                        # stop arm tracking
+                        self.arm_tracking_event.clear()
+                        # stop user tracking
+                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                        # move head down
                         self.motion.setStiffnesses("HeadPitch", 1)
                         # self.motion.setStiffnesses("HeadPitch", 1)
                         names = ['HeadPitch']
                         angles = [angle/2]
-                        self.motion.setAngles(names, angles, 0.15)       
+                        self.motion.setAngles(names, angles, 0.15)    
+                        
+                    elif txt =="track arm" or txt == "follow arm" or txt=="truck arm" or txt == "truck art"  or txt == "track art":
+                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                        self.arm_tracking_event.set()
+                        
+                    elif txt =="stop tracking" or txt == "stop following" or txt == "stop arm tracking" or txt == "stop arm following":
+                        self.arm_tracking_event.clear()
+                        
+                    elif txt =="track user" or txt == "truck user":
+                        self.arm_tracking_event.clear()
+                        self.life_service.setAutonomousAbilityEnabled("BasicAwareness", True)
+                        
                     else:
                         # Repeat the recognized text
                         self.tts.say(self.text)
@@ -145,7 +194,12 @@ class SpeechThread(Thread):
             else:
                 if self.is_running: 
                     time.sleep(0.5)
-                     
+                    
+        # stop arm tracking thread
+        self.arm_tracking_event.set()
+        self.stop_event.set()     
+        self.hmt.join()
+          
         # self.q_text.put("Speech thread terminated correctly")            
         print("Speech thread terminated correctly")
 

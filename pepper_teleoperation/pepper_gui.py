@@ -28,7 +28,7 @@ class PepperGui:
         self.master = master
         self.session = session
         
-        self.teleop = tk.IntVar()
+        self.teleop = tk.IntVar(value=1)
         self.approach = tk.IntVar()
         
         # Instantiate queue and class for speech recognition
@@ -210,12 +210,8 @@ class PepperGui:
                                          bd=0,
                                          activeforeground='white')
         self.c_approach.place(x=80, y=y)
-        # switch_on = tk.PhotoImage(width=50, height=50)
-        # switch_off = tk.PhotoImage(width=50, height=50)
         
         self.c_teleop = tk.Checkbutton(self.master,
-                                    #    image = switch_off,
-                                    #    selectimage= switch_on,
                                        text = "Teleoperate",
                                        variable = self.teleop,
                                        onvalue = 1, 
@@ -224,12 +220,14 @@ class PepperGui:
                                        bg=red,
                                        fg='white',
                                        selectcolor=light_red,
-                                       activebackground=red,
+                                       activebackground=light_red,
                                        activeforeground='white',
+                                       disabledforeground='white',
                                        highlightthickness=0,
                                        bd=0,
                                        relief=tk.FLAT,
-                                       indicatoron=True)
+                                       indicatoron=True,
+                                       state=tk.DISABLED)
         self.c_teleop.place(x=80, y=y+30)
         
         # Entries

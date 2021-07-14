@@ -11,16 +11,19 @@ import random
 
 from scipy import signal
 import numpy as np
-from scipy.spatial.transform import Rotation
+from threading import Thread
 
-class HeadMotion:
-    def __init__(self, session):
+
+class HeadMotionThread(Thread):
+    def __init__(self, session, event_arm, event_stop):
         # Get the service ALMotion
         self.motion_service = session.service("ALMotion")
         self.life_service = session.service("ALAutonomousLife")
         
-        self.is_running = False
+        self.is_running = True
         self.first_time = True
+        self.e_arm = event_arm
+        self.e_stop = event_stop
         
         # getTransform parameters
         self.name_arm         = 'RArm'
@@ -45,13 +48,23 @@ class HeadMotion:
         # Initialize filters for each angle
         self.z_Y = signal.lfilter_zi(self.b, self.a)   
         self.z_P = signal.lfilter_zi(self.b, self.a)   
+        
+        # Call the Thread class's init function
+        Thread.__init__(self)
+        
+        print("HeadMotionThread started")
     
     def run(self):
         # main loop
         while self.is_running:
-            self.follow_arm()
-            # time.sleep(0.2)
-            
+            if self.e_arm.isSet():
+                self.follow_arm()
+            else:
+                self.e_arm.wait()
+            if self.e_stop.isSet():
+                self.is_running = False
+        
+        print("HeadMotionThread ended correctly")
             
     ## method follow_arm
     #
@@ -96,11 +109,11 @@ class HeadMotion:
         yaw, self.z_Y = signal.lfilter(self.b, self.a, [yaw], zi=self.z_Y)
         pitch, self.z_P = signal.lfilter(self.b, self.a, [pitch], zi=self.z_P)
         
-        print("Yaw: ", yaw * 180/np.pi)
-        print("Pitch: ", pitch * 180/np.pi)
+        # print("Yaw: ", yaw * 180/np.pi)
+        # print("Pitch: ", pitch * 180/np.pi)
         
         self.motion_service.setAngles(self.names, [float(yaw), float(pitch)], 0.1)
-    
+
     ## method disable_autonomous_movements
     #
     #  Disable some Autonomous Life capabilities
@@ -194,7 +207,7 @@ class HeadMotion:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="130.251.13.139",
+    parser.add_argument("--ip", type=str, default="130.251.13.131",
                         help="Robot IP address. On robot or Local Naoqi: use '127.0.0.1'.")
     parser.add_argument("--port", type=int, default=9559,
                         help="Naoqi port number")
@@ -208,7 +221,7 @@ if __name__ == "__main__":
                "Please check your script arguments. Run with -h option for help.")
         sys.exit(1)
         
-    hm = HeadMotion(session)
+    hm = HeadMotionThread(session)
     hm.is_running = True
     hm.run()
     
