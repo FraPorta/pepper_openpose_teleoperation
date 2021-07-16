@@ -4,6 +4,16 @@ import cv2
 import os
 import numpy as np
 from datetime import datetime
+import yaml
+import json
+
+
+# get camera calibration parameters
+with open("video_data\calibration\calibration_matrix.yaml", 'r') as stream:
+    data_loaded = yaml.safe_load(stream)
+
+mtx = np.array(data_loaded['camera_matrix'])
+dist = np.array(data_loaded['dist_coeff'])
   
 # Specify resolution
 resolution = (760, 435)
@@ -45,11 +55,14 @@ found_ids = []
 # dict to store the single marker info when found for the first time
 marker_info = {}
 # list to store the already found markers info
-markers_list = []
+markers_list = {}
 
 highlight = {}
 count = {}
-
+z_close = {}
+# real marker size
+markerSizeInMM = 40
+ 
 while True:
 
     # Take screenshot using PyAutoGUI
@@ -73,6 +86,11 @@ while True:
         
 		# loop over the detected ArUCo corners
         for (markerCorner, markerID) in zip(corners, ids):
+            
+            rvec , tvec, _ = cv2.aruco.estimatePoseSingleMarkers(markerCorner, markerSizeInMM, mtx, dist)
+            temp_z = tvec[0,0,2]
+            
+            
             # extract the marker corners (which are always returned
             # in top-left, top-right, bottom-right, and bottom-left
             # order)
@@ -84,60 +102,84 @@ while True:
             bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
             bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
             topLeft = (int(topLeft[0]), int(topLeft[1]))
-
-            # Update the list of already found marker IDs
-            if not markerID in found_ids:
-                found_ids.append(markerID)
-                corn = [topRight, bottomRight, bottomLeft, topLeft]
-                timestamp = datetime.now().strftime('%H:%M:%S.%f')
-                
-                marker_info['id']           = markerID
-                marker_info['timestamp']    = timestamp
-                marker_info['topRight']     = topRight
-                marker_info['bottomRight']  = bottomRight
-                marker_info['bottomLeft']   = bottomLeft
-                marker_info['topLeft']      = topLeft
-                
-                markers_list.append(marker_info)
-                marker_info = {} 
-                
-                highlight[markerID] = True
-                count[markerID] = 0
-            
-            # if highlight:
-            #     highlight_markers = [k for k,v in highlight.items() if v == True]
-            
-            if count[markerID] > 10:
-                highlight[markerID] = False
-                count[markerID] = 0
-                
-            if highlight[markerID]: 
-                c = count[markerID]
-                count[markerID] = c + 1  
-                
-                # draw the bounding box of the ArUCo detection
-                cv2.line(frame, topLeft, topRight, (0, 255, 0), 4)
-                cv2.line(frame, topRight, bottomRight, (0, 255, 0), 4)
-                cv2.line(frame, bottomRight, bottomLeft, (0, 255, 0), 4)
-                cv2.line(frame, bottomLeft, topLeft, (0, 255, 0), 4)
-            else:    
-                # draw the bounding box of the ArUCo detection
-                cv2.line(frame, topLeft, topRight, (255, 0, 0), 2)
-                cv2.line(frame, topRight, bottomRight, (255, 0, 0), 2)
-                cv2.line(frame, bottomRight, bottomLeft, (255, 0, 0), 2)
-                cv2.line(frame, bottomLeft, topLeft, (255, 0, 0), 2)
             
             # compute and draw the center (x, y)-coordinates of the
             # ArUco marker
             cX = int((topLeft[0] + bottomRight[0]) / 2.0)
             cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+
+            # Update the list of already found marker IDs
+            if not markerID in found_ids:
+                z_first = tvec[0,0,2]
+                z_close[str(markerID)] = z_first
+                
+                found_ids.append(markerID)
+                corn = [topRight, bottomRight, bottomLeft, topLeft]
+                timestamp = datetime.now().strftime('%H:%M:%S.%f')
+                
+                marker_info['id']               = markerID
+                marker_info['first_distance']   = z_first
+                marker_info['closer_distance']  = 0.0
+                marker_info['rotation']         = rvec * 180/np.pi
+                marker_info['topRight']         = topRight
+                marker_info['bottomRight']      = bottomRight
+                marker_info['bottomLeft']       = bottomLeft
+                marker_info['topLeft']          = topLeft
+                marker_info['center']           = (cX, cY)
+                marker_info['timestamp']        = timestamp
+                
+                markers_list[str(markerID)] = marker_info
+                marker_info = {} 
+                
+                highlight[str(markerID)] = True
+                count[str(markerID)] = 0
+            
+            # Update closest distance
+            if str(markerID) in z_close:
+                if temp_z < z_close[str(markerID)] and temp_z > 50:
+                    z_close[str(markerID)] = temp_z
+            # print(z_close)
+            
+            # Draw a circle in the center of the marker
             cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
             
-            # draw the ArUco marker ID on the frame
-            cv2.putText(frame, str(markerID),
+            # Counter for chenging color
+            if count[str(markerID)] > 10:
+                highlight[str(markerID)] = False
+                count[str(markerID)] = 0
+            
+            # draw lines and center of the marker first in blue and then green when the counter expires   
+            if highlight[str(markerID)]: 
+                c = count[str(markerID)]
+                count[str(markerID)] = c + 1  
+                
+                # draw the bounding box of the ArUCo detection in green
+                cv2.line(frame, topLeft, topRight, (255, 0, 0), 2)
+                cv2.line(frame, topRight, bottomRight, (255, 0, 0), 2)
+                cv2.line(frame, bottomRight, bottomLeft, (255, 0, 0), 2)
+                cv2.line(frame, bottomLeft, topLeft, (255, 0, 0), 2)
+                
+                # draw the ArUco marker ID on the frame
+                cv2.putText(frame, str(markerID),
+                        (topLeft[0], topLeft[1] - 15),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5, (255, 0, 0), 2)
+                
+            else:    
+                # draw the bounding box of the ArUCo detection in blue
+                cv2.line(frame, topLeft, topRight, (0, 255, 0), 4)
+                cv2.line(frame, topRight, bottomRight, (0, 255, 0), 4)
+                cv2.line(frame, bottomRight, bottomLeft, (0, 255, 0), 4)
+                cv2.line(frame, bottomLeft, topLeft, (0, 255, 0), 4)
+                
+                # draw the ArUco marker ID on the frame
+                cv2.putText(frame, str(markerID),
                         (topLeft[0], topLeft[1] - 15),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.5, (0, 255, 0), 2)
+            
+            
+            
 
     # Write it to the output file
     out.write(frame)
@@ -155,12 +197,15 @@ out.release()
 # Destroy all windows
 cv2.destroyAllWindows()
 
+for key in markers_list.keys():
+    markers_list[key]['closer_distance'] = z_close[key]
+    
 # Save data in a file
 with open(folder + "markers.txt", "w") as textfile:
-    textfile.write("Found markers:\n")
     # If markers were found save info in a file
     if markers_list:  
-        for line in markers_list:
-            textfile.write(str(line) + "\n")
+        # json.dump(markers_list, textfile)
+        for item in markers_list.values():
+            textfile.write(str(item) + "\n")
     textfile.close()
   
