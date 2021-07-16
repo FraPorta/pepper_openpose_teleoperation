@@ -103,6 +103,9 @@ class HeadMotionThread(Thread):
         # Get yaw and pitch and saturate them
         # yaw, pitch = self.get_euler_angles(ha_T)
         yaw, pitch = self.get_euler_angles(ah_T)
+        
+        pitch = pitch - 0.174533*2 # 10 degrees * 2
+        
         # print("Yaw: ", yaw * 180/np.pi)
         # print("Pitch: ", pitch * 180/np.pi)
         print("Pitch: ", pitch * 180/np.pi)

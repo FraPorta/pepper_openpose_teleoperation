@@ -138,7 +138,6 @@ while True:
             if str(markerID) in z_close:
                 if temp_z < z_close[str(markerID)] and temp_z > 50:
                     z_close[str(markerID)] = temp_z
-            # print(z_close)
             
             # Draw a circle in the center of the marker
             cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
