@@ -30,6 +30,7 @@ class SocketSend:
     # convert dictionary to json and send it via tcp socket
     def send(self, msg_dict):
         msg_json = json.dumps(msg_dict)  
+        # print(msg_json)
         self.sock.send_string(msg_json)
 
     ## method close

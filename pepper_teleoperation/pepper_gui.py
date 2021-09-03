@@ -239,7 +239,7 @@ class PepperGui:
                                 disabledbackground=darkest_red,
                                 width=13,
                                 relief=tk.FLAT)
-        self.text_ip.insert(tk.END, "130.251.13.139")
+        self.text_ip.insert(tk.END, "130.251.13.147")
         self.text_ip.place(x=476, y=390)
         
         self.lbl_ip = tk.Label(self.master,

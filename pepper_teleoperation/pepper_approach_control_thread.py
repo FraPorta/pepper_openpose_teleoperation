@@ -297,7 +297,7 @@ class PepperApproachControl(Thread):
         motion_service.setStiffnesses("HipPitch", stiffness)
         
         # Disable external collision protection
-        # motion_service.setExternalCollisionProtectionEnabled("Arms", False)
+        motion_service.setExternalCollisionProtectionEnabled("Arms", False)
         
         # Initialize class KeypointsToAngles
         KtA = KeypointsToAngles()
@@ -558,7 +558,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--show_plots", type=int, default=1,
                         help="Select 1 if you want to see the plots when you interrupt the script with the keyboard")
-    parser.add_argument("--approach_user", type=int, default=1,
+    parser.add_argument("--approach_user", type=int, default=0,
                         help="Select 1 if you want Pepper to search and approach a user in the room before teleoperation")
     parser.add_argument("--approach_only", type=int, default=0,
                         help="Select 1 if you want Pepper to only search and approach a user in the room without teleoperation")

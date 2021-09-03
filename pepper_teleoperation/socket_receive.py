@@ -21,7 +21,7 @@ class SocketReceive:
         # Get local ip address
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname) 
-        # local_ip = "130.251.13.123"
+        # local_ip = "130.251.13.111"
         # try socket connect
         try: 
             self.sock.connect("tcp://%s:1234" % local_ip)
@@ -39,6 +39,7 @@ class SocketReceive:
             json_msg = self.sock.recv()
             # json_msg = sock.recv_string()
             wp_dict = json.loads(json_msg)
+            # print(wp_dict)
             return wp_dict
         except Exception as e:
             print(e)
