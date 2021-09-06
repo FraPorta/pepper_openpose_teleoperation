@@ -294,10 +294,15 @@ class PepperApproachControl(Thread):
         motion_service.setStiffnesses("RElbowYaw", stiffness)
         motion_service.setStiffnesses("RElbowRoll", stiffness)
 
+        motion_service.setStiffnesses("RWristYaw", stiffness)
+        # motion_service.setStiffnesses("LWristYaw", stiffness)
+        
         motion_service.setStiffnesses("HipPitch", stiffness)
         
         # Disable external collision protection
         motion_service.setExternalCollisionProtectionEnabled("Arms", False)
+        
+        
         
         # Initialize class KeypointsToAngles
         KtA = KeypointsToAngles()
@@ -481,7 +486,10 @@ class PepperApproachControl(Thread):
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
                     motion_service.setAngles(names, angles, fractionMaxSpeed)
-                    
+                
+                # Mantain right wrist horizontal w. r. t. ground
+                motion_service.setAngles(["RWristYaw"], [-1.3], 0.15) 
+                
                 # Store robot angles lists for plots
                 if self.show_plot:
                     LSP_arr_robot.append(memProxy.getData("Device/SubDeviceList/LShoulderPitch/Position/Sensor/Value"))
@@ -518,7 +526,11 @@ class PepperApproachControl(Thread):
                 # sys.exit(-1)
         
         # robot go to Stand Init posture
-        posture_service.goToPosture("StandInit", 0.5)
+        try:
+            posture_service.goToPosture("StandInit", 0.5)
+        except RuntimeError as e:
+            print(e)
+            
          
         # signal to Openpose to stop saving keypoints
         self.sock_send.send('Stop')

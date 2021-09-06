@@ -90,10 +90,9 @@ try:
             
             # loop over the detected ArUCo corners
             for (markerCorner, markerID) in zip(corners, ids):
-                
+                # Get translation and rotation vector from the marker
                 rvec , tvec, _ = cv2.aruco.estimatePoseSingleMarkers(markerCorner, markerSizeInMM, mtx, dist)
                 temp_z = tvec[0,0,2]
-                
                 
                 # extract the marker corners (which are always returned
                 # in top-left, top-right, bottom-right, and bottom-left

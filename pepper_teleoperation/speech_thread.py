@@ -49,7 +49,7 @@ class SpeechThread(Thread):
         # time to perform the movements
         t = 3
         # distance covered by every movement
-        d = 0.4
+        d = 0.6
         # angle of rotation
         angle = 0.261799*2
         
@@ -73,9 +73,9 @@ class SpeechThread(Thread):
                     # text to lower case
                     txt = self.text.lower()
                     
-                    # disable autonomous blinking if activated
-                    if self.blink_service.isEnabled():
-                            self.blink_service.setEnabled(False)
+                    # # disable autonomous blinking if activated
+                    # if self.blink_service.isEnabled():
+                    #         self.blink_service.setEnabled(False)
                             
                     # Voice commands to control Pepper position and the GUI
                     if txt == 'move forward' or txt == 'go forward':
@@ -192,7 +192,7 @@ class SpeechThread(Thread):
                         angles = [angle/2]
                         self.motion.setAngles(names, angles, 0.15)    
                     
-                    elif txt == 'watch ahead' or txt == 'look ahead' or txt == "luke ahead":
+                    elif txt == 'watch ahead' or txt == 'look ahead' or txt == "luke ahead" or txt == "look forward" or txt == "watch forward":
                         self.life_service.stopAll()
                         # self.life_service.setState('disabled')
                         # stop arm tracking
