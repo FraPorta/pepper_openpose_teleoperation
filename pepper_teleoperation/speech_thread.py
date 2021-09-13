@@ -209,7 +209,8 @@ class SpeechThread(Thread):
                         angles = [0, 0]
                         self.motion.setAngles(names, angles, 0.15)    
                         
-                    elif txt =="track arm" or txt == "follow arm" or txt=="truck arm" or txt == "truck art"  or txt == "track art":
+                    elif txt =="track arm" or txt == "follow arm" or txt=="truck arm" or txt == "truck art"  or txt == "track art" or txt == "hollow armor":
+                        self.text = "follow arm"
                         self.life_service.stopAll()
                         # self.life_service.setState('disabled')
                         if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
@@ -229,8 +230,9 @@ class SpeechThread(Thread):
                     elif txt == 'stop focus':
                         self.life_service.stopAll()
                     else:
-                        # Repeat the recognized text
-                        self.tts.say(self.text)
+                        if self.session.isConnected():
+                            # Repeat the recognized text
+                            self.tts.say(self.text)
                         
                     # Put text in a queue for the GUI
                     self.q_text.put(self.text) 
@@ -253,10 +255,11 @@ class SpeechThread(Thread):
     def recognize(self):
         # print(self.list_working_microphones())
         with sr.Microphone() as source:  
+            self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=None)
+                self.audio = self.r.listen(source, timeout=1, phrase_time_limit=2)
 
                 # received audio data, recognize it using Google Speech Recognition
                 recognized_text = self.r.recognize_google(self.audio, language="en-EN")

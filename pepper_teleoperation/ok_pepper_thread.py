@@ -60,47 +60,6 @@ class OkPepperThread(Thread):
                         self.q_button.put('start pepper')
                     elif txt == 'stop robot' or txt == 'stop pepper' or txt == 'stop moving':
                         self.q_button.put('stop pepper')
-                        
-                    # # Voice commands to control Pepper position
-                    # elif txt == 'move forward' or txt == 'go forward':
-                    #     x = d
-                    #     y = 0.0
-                    #     theta = 0.0
-                    #     self.motion.moveTo(x, y, theta, t)
-                        
-                    # elif txt == 'move backwards' or txt == 'go backwards' or\
-                    #      txt == 'move backward' or txt == 'go backward' or\
-                    #      txt == 'move back' or txt == 'go back':
-                    #     x = -d
-                    #     y = 0.0
-                    #     theta = 0.0
-                    #     self.motion.moveTo(x, y, theta, t)
-
-                    # elif txt == 'move right' or txt == 'go right' or\
-                    #      txt == 'move to the right' or txt == 'go to the right':
-                    #     x = 0.0
-                    #     y = d
-                    #     theta = 0.0                         
-                    #     self.motion.moveTo(x, y, theta, t)
-
-                    # elif txt == 'move left' or txt == 'go left' or\
-                    #      txt == 'move to the left' or txt == 'go to the left':
-                    #     x = 0.0
-                    #     y = -d
-                    #     theta = 0.0
-                    #     self.motion.moveTo(x, y, theta, t)
-                        
-                    # elif txt == 'rotate left' or txt == 'turn left':
-                    #     x = 0.0
-                    #     y = 0.0
-                    #     theta = angle    
-                    #     self.motion.moveTo(x, y, theta, t)
-                    
-                    # elif txt == 'rotate right' or txt == 'turn right':
-                    #     x = 0.0
-                    #     y = 0.0
-                    #     theta = -angle
-                    #     self.motion.moveTo(x, y, theta, t)
 
             else:
                 if self.is_running: 
@@ -114,11 +73,12 @@ class OkPepperThread(Thread):
     def recognize(self):
         # print(self.list_working_microphones())
         with sr.Microphone() as source:  
+            self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=None)
-
+                self.audio = self.r.listen(source, timeout=1, phrase_time_limit=2)
+                
                 # received audio data, recognize it using Google Speech Recognition
                 recognized_text = self.r.recognize_google(self.audio, language="en-EN")
                 

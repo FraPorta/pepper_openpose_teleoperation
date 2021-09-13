@@ -108,7 +108,7 @@ class HeadMotionThread(Thread):
         
         # print("Yaw: ", yaw * 180/np.pi)
         # print("Pitch: ", pitch * 180/np.pi)
-        print("Pitch: ", pitch * 180/np.pi)
+        # print("Pitch: ", pitch * 180/np.pi)
         
         yaw, pitch = self.saturate_angles(yaw[0], pitch[0])
         
