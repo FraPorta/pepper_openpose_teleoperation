@@ -8,6 +8,7 @@ import time
 import numpy as np
 import audioop
 import threading
+import math
 
 import speech_recognition as sr
 from threading import Thread
@@ -49,9 +50,9 @@ class SpeechThread(Thread):
         # time to perform the movements
         t = 3
         # distance covered by every movement
-        d = 0.6
-        # angle of rotation
-        angle = 0.261799*2
+        d = 0.5
+        # angle of rotation 45 degrees
+        angle = math.pi/4
         
         # main loop
         while self.is_running:
@@ -76,166 +77,170 @@ class SpeechThread(Thread):
                     # # disable autonomous blinking if activated
                     # if self.blink_service.isEnabled():
                     #         self.blink_service.setEnabled(False)
+                    try:      
+                        # Voice commands to control Pepper position and the GUI
+                        if txt == 'move forward' or txt == 'go forward':
+                            x = d
+                            y = 0.0
+                            theta = 0.0
+                            self.motion.moveTo(x, y, theta, t)
                             
-                    # Voice commands to control Pepper position and the GUI
-                    if txt == 'move forward' or txt == 'go forward':
-                        x = d
-                        y = 0.0
-                        theta = 0.0
-                        self.motion.moveTo(x, y, theta, t)
-                        
-                    elif txt == 'move backwards' or txt == 'go backwards' or\
-                         txt == 'move backward' or txt == 'go backward' or\
-                         txt == 'move back' or txt == 'go back':
-                        x = -d
-                        y = 0.0
-                        theta = 0.0
-                        self.motion.moveTo(x, y, theta, t)
+                        elif txt == 'move backwards' or txt == 'go backwards' or\
+                            txt == 'move backward' or txt == 'go backward' or\
+                            txt == 'move back' or txt == 'go back':
+                            x = -d
+                            y = 0.0
+                            theta = 0.0
+                            self.motion.moveTo(x, y, theta, t)
 
-                    elif txt == 'move right' or txt == 'go right' or\
-                         txt == 'move to the right' or txt == 'go to the right':
-                        x = 0.0
-                        y = -d
-                        theta = 0.0                         
-                        self.motion.moveTo(x, y, theta, t)
+                        elif txt == 'move right' or txt == 'go right' or\
+                            txt == 'move to the right' or txt == 'go to the right':
+                            x = 0.0
+                            y = -d
+                            theta = 0.0                         
+                            self.motion.moveTo(x, y, theta, t)
 
-                    elif txt == 'move left' or txt == 'go left' or\
-                         txt == 'move to the left' or txt == 'go to the left':
-                        x = 0.0
-                        y = d
-                        theta = 0.0
-                        self.motion.moveTo(x, y, theta, t)
-                        
-                    elif txt == 'rotate left' or txt == 'turn left':
-                        x = 0.0
-                        y = 0.0
-                        theta = angle    
-                        self.motion.moveTo(x, y, theta, t)
-                    
-                    elif txt == 'rotate right' or txt == 'turn right':
-                        x = 0.0
-                        y = 0.0
-                        theta = -angle
-                        self.motion.moveTo(x, y, theta, t)
-                        
-                    elif txt == 'stop talking':
-                        self.q_button.put(txt)
-                    
-                    elif txt == 'start pepper' or txt == 'start robot' or txt == 'start moving':
-                        self.q_button.put('start pepper')
-                    
-                    elif txt == 'stop pepper' or txt == 'stop robot' or txt == 'stop moving':
-                        self.q_button.put('stop pepper') 
-                    
-                    elif txt == 'watch right' or txt == 'look right' or txt == 'luke wright' or txt == 'look to the right':
-                        self.life_service.stopAll()
-                        # self.life_service.setState('disabled')
-                        # stop arm tracking
-                        if self.arm_tracking_event.is_set():
-                            self.arm_tracking_event.clear()
-                        
-                        # stop user tracking
-                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
-                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
-                        # move head right
-                        self.motion.setStiffnesses("HeadYaw", 1)
-                        # self.motion.setStiffnesses("HeadPitch", 1)
-                        names = ['HeadYaw']
-                        angles = [-angle]
-                        self.motion.setAngles(names, angles, 0.15)     
-                    elif txt == 'watch left' or txt == 'look left' or txt == 'look to the left' or txt=="luke left":
-                        self.life_service.stopAll()
-                        # self.life_service.setState('disabled')
-                        # stop arm tracking
-                        if self.arm_tracking_event.is_set():
-                            self.arm_tracking_event.clear()
-                        # stop user tracking
-                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
-                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
-                        # move head left
-                        self.motion.setStiffnesses("HeadYaw", 1)
-                        # self.motion.setStiffnesses("HeadPitch", 1)
-                        names = ['HeadYaw']
-                        angles = [angle]
-                        self.motion.setAngles(names, angles, 0.15)   
-                        
-                    elif txt == 'watch up' or txt == 'look up' or txt == "luke up":
-                        self.life_service.stopAll()
-                        # self.life_service.setState('disabled')
-                        # stop arm tracking
-                        if self.arm_tracking_event.is_set():
-                            self.arm_tracking_event.clear()
-                        
-                        # stop user tracking
-                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
-                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
-                        # MOVE HEAD UP
-                        self.motion.setStiffnesses("HeadPitch", 1)
-                        # self.motion.setStiffnesses("HeadPitch", 1)
-                        names = ['HeadPitch']
-                        angles = [-angle/2]
-                        self.motion.setAngles(names, angles, 0.15)    
-                           
-                    elif txt == 'watch down' or txt == 'look down' or txt == "luke down":
-                        self.life_service.stopAll()
-                        # self.life_service.setState('disabled')
-                        # stop arm tracking
-                        if self.arm_tracking_event.is_set():
-                            self.arm_tracking_event.clear()
-                        # stop user tracking
-                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
-                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
-                        # move head down
-                        self.motion.setStiffnesses("HeadPitch", 1)
-                        # self.motion.setStiffnesses("HeadPitch", 1)
-                        names = ['HeadPitch']
-                        angles = [angle/2]
-                        self.motion.setAngles(names, angles, 0.15)    
-                    
-                    elif txt == 'watch ahead' or txt == 'look ahead' or txt == "luke ahead" or txt == "look forward" or txt == "watch forward":
-                        self.life_service.stopAll()
-                        # self.life_service.setState('disabled')
-                        # stop arm tracking
-                        if self.arm_tracking_event.is_set():
-                            self.arm_tracking_event.clear()
-                        # stop user tracking
-                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
-                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                        elif txt == 'move left' or txt == 'go left' or\
+                            txt == 'move to the left' or txt == 'go to the left':
+                            x = 0.0
+                            y = d
+                            theta = 0.0
+                            self.motion.moveTo(x, y, theta, t)
                             
-                        # move head down
-                        self.motion.setStiffnesses("HeadPitch", 1)
-                        self.motion.setStiffnesses("HeadYaw", 1)
-                        names = ['HeadYaw', 'HeadPitch']
-                        angles = [0, 0]
-                        self.motion.setAngles(names, angles, 0.15)    
+                        elif txt == 'rotate left' or txt == 'turn left':
+                            x = 0.0
+                            y = 0.0
+                            
+                            theta = angle    
+                            self.motion.moveTo(x, y, theta, t)
                         
-                    elif txt =="track arm" or txt == "follow arm" or txt=="truck arm" or txt == "truck art"  or txt == "track art" or txt == "hollow armor":
-                        self.text = "follow arm"
-                        self.life_service.stopAll()
-                        # self.life_service.setState('disabled')
-                        if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
-                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
-                        if not self.arm_tracking_event.is_set():
-                            self.arm_tracking_event.set()
+                        elif txt == 'rotate right' or txt == 'turn right':
+                            x = 0.0
+                            y = 0.0
+                            theta = -angle
+                            self.motion.moveTo(x, y, theta, t)
+                            
+                        elif txt == 'stop talking':
+                            self.q_button.put(txt)
                         
-                    elif txt =="stop tracking" or txt == "stop following" or txt == "stop arm tracking" or txt == "stop arm following":
-                        if self.arm_tracking_event.is_set():
-                            self.arm_tracking_event.clear()
+                        elif txt == 'start pepper' or txt == 'start robot' or txt == 'start moving':
+                            self.q_button.put('start pepper')
                         
-                    elif txt =="track user" or txt == "truck user":
-                        if self.arm_tracking_event.is_set():
-                            self.arm_tracking_event.clear()
-                        self.life_service.setAutonomousAbilityEnabled("BasicAwareness", True)
+                        elif txt == 'stop pepper' or txt == 'stop robot' or txt == 'stop moving':
+                            self.q_button.put('stop pepper') 
                         
-                    elif txt == 'stop focus':
-                        self.life_service.stopAll()
-                    else:
-                        if self.session.isConnected():
-                            # Repeat the recognized text
-                            self.tts.say(self.text)
+                        elif txt == 'watch right' or txt == 'look right' or txt == 'luke wright' or txt == 'look to the right':
+                            self.life_service.stopAll()
+                            # self.life_service.setState('disabled')
+                            # stop arm tracking
+                            if self.arm_tracking_event.is_set():
+                                self.arm_tracking_event.clear()
+                            
+                            # stop user tracking
+                            if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                                self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                            # move head right
+                            self.motion.setStiffnesses("HeadYaw", 1)
+                            # self.motion.setStiffnesses("HeadPitch", 1)
+                            names = ['HeadYaw']
+                            angles = [-angle]
+                            self.motion.setAngles(names, angles, 0.15)     
+                        elif txt == 'watch left' or txt == 'look left' or txt == 'look to the left' or txt=="luke left":
+                            self.life_service.stopAll()
+                            # self.life_service.setState('disabled')
+                            # stop arm tracking
+                            if self.arm_tracking_event.is_set():
+                                self.arm_tracking_event.clear()
+                            # stop user tracking
+                            if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                                self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                            # move head left
+                            self.motion.setStiffnesses("HeadYaw", 1)
+                            # self.motion.setStiffnesses("HeadPitch", 1)
+                            names = ['HeadYaw']
+                            angles = [angle]
+                            self.motion.setAngles(names, angles, 0.15)   
+                            
+                        elif txt == 'watch up' or txt == 'look up' or txt == "luke up":
+                            self.life_service.stopAll()
+                            # self.life_service.setState('disabled')
+                            # stop arm tracking
+                            if self.arm_tracking_event.is_set():
+                                self.arm_tracking_event.clear()
+                            
+                            # stop user tracking
+                            if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                                self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                            # MOVE HEAD UP
+                            self.motion.setStiffnesses("HeadPitch", 1)
+                            # self.motion.setStiffnesses("HeadPitch", 1)
+                            names = ['HeadPitch']
+                            angles = [-angle/2]
+                            self.motion.setAngles(names, angles, 0.15)    
+                            
+                        elif txt == 'watch down' or txt == 'look down' or txt == "luke down":
+                            self.life_service.stopAll()
+                            # self.life_service.setState('disabled')
+                            # stop arm tracking
+                            if self.arm_tracking_event.is_set():
+                                self.arm_tracking_event.clear()
+                            # stop user tracking
+                            if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                                self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                            # move head down
+                            self.motion.setStiffnesses("HeadPitch", 1)
+                            # self.motion.setStiffnesses("HeadPitch", 1)
+                            names = ['HeadPitch']
+                            angles = [angle/2]
+                            self.motion.setAngles(names, angles, 0.15)    
                         
-                    # Put text in a queue for the GUI
-                    self.q_text.put(self.text) 
+                        elif txt == 'watch ahead' or txt == 'look ahead' or txt == "luke ahead" or txt == "look forward" or txt == "watch forward":
+                            self.life_service.stopAll()
+                            # self.life_service.setState('disabled')
+                            # stop arm tracking
+                            if self.arm_tracking_event.is_set():
+                                self.arm_tracking_event.clear()
+                            # stop user tracking
+                            if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                                self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                                
+                            # move head down
+                            self.motion.setStiffnesses("HeadPitch", 1)
+                            self.motion.setStiffnesses("HeadYaw", 1)
+                            names = ['HeadYaw', 'HeadPitch']
+                            angles = [0, 0]
+                            self.motion.setAngles(names, angles, 0.15)    
+                            
+                        elif txt =="track arm" or txt == "follow arm" or txt=="truck arm" or txt == "truck art"  or txt == "track art" or txt == "hollow armor" or txt=="hollow arm":
+                            self.text = "follow arm"
+                            self.life_service.stopAll()
+                            # self.life_service.setState('disabled')
+                            if self.life_service.getAutonomousAbilityEnabled("BasicAwareness"):
+                                self.life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+                            if not self.arm_tracking_event.is_set():
+                                self.arm_tracking_event.set()
+                            
+                        elif txt =="stop tracking" or txt == "stop following" or txt == "stop arm tracking" or txt == "stop arm following":
+                            if self.arm_tracking_event.is_set():
+                                self.arm_tracking_event.clear()
+                            
+                        elif txt =="track user" or txt == "truck user":
+                            if self.arm_tracking_event.is_set():
+                                self.arm_tracking_event.clear()
+                            self.life_service.setAutonomousAbilityEnabled("BasicAwareness", True)
+                            
+                        elif txt == 'stop focus':
+                            self.life_service.stopAll()
+                        else:
+                            if self.session.isConnected():
+                                # Repeat the recognized text
+                                self.tts.say(self.text)
+                            
+                        # Put text in a queue for the GUI
+                        self.q_text.put(self.text) 
+                    except RuntimeError as e:
+                        print(e)
+                        print("Error:", self.text)
             else:
                 if self.is_running: 
                     time.sleep(0.5)

@@ -431,6 +431,7 @@ class PepperGui:
         # Stop the two Speech Recognition Threads
         self.q_record.put("StopRun")
         self.q_stop.put("StopRun")
+        # self.q_pepper.put(True)
         
         # Wait for the threads to finish before closing the GUI
         if self.st is not None:
@@ -442,10 +443,13 @@ class PepperGui:
                 self.ok_pepper.join()
 
         if self.pac is not None:
-            if self.btn_pepper.cget("text") == "Stop Moving":
-                self.btn_pepper.invoke()
-                if self.ok_pepper.is_alive():
-                    self.ok_pepper.join()
+            if self.pac.is_alive():
+                if self.btn_pepper.cget("text") == "Stop Moving":
+                    self.btn_pepper.invoke()
+                    self.pac.join()
+                    # print("PepperApproachControl thread terminated correctly")
+                    # if self.ok_pepper.is_alive():
+                    #     self.ok_pepper.join()
         
         self.master.destroy()
     

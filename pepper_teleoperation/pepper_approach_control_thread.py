@@ -559,6 +559,7 @@ class PepperApproachControl(Thread):
                 write.writerow(timestamp_arr_end) 
             
             self.sock_send.close()
+            # print("PepperApproachControl thread terminated correctly")
             
 # Main 
 if __name__ == "__main__":
