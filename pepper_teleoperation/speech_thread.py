@@ -264,7 +264,7 @@ class SpeechThread(Thread):
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=1, phrase_time_limit=2)
+                self.audio = self.r.listen(source, timeout=1, phrase_time_limit=3)
 
                 # received audio data, recognize it using Google Speech Recognition
                 recognized_text = self.r.recognize_google(self.audio, language="en-EN")
