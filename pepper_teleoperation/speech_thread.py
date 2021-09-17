@@ -79,7 +79,7 @@ class SpeechThread(Thread):
                     #         self.blink_service.setEnabled(False)
                     try:      
                         # Voice commands to control Pepper position and the GUI
-                        if txt == 'move forward' or txt == 'go forward':
+                        if txt == 'move forward' or txt == 'go forward' or txt == 'forward':
                             x = d
                             y = 0.0
                             theta = 0.0
@@ -87,21 +87,21 @@ class SpeechThread(Thread):
                             
                         elif txt == 'move backwards' or txt == 'go backwards' or\
                             txt == 'move backward' or txt == 'go backward' or\
-                            txt == 'move back' or txt == 'go back':
+                            txt == 'move back' or txt == 'go back' or txt == 'back':
                             x = -d
                             y = 0.0
                             theta = 0.0
                             self.motion.moveTo(x, y, theta, t)
 
                         elif txt == 'move right' or txt == 'go right' or\
-                            txt == 'move to the right' or txt == 'go to the right':
+                            txt == 'move to the right' or txt == 'go to the right' or txt == 'right':
                             x = 0.0
                             y = -d
                             theta = 0.0                         
                             self.motion.moveTo(x, y, theta, t)
 
                         elif txt == 'move left' or txt == 'go left' or\
-                            txt == 'move to the left' or txt == 'go to the left':
+                            txt == 'move to the left' or txt == 'go to the left' or txt == 'left':
                             x = 0.0
                             y = d
                             theta = 0.0
@@ -258,8 +258,11 @@ class SpeechThread(Thread):
     #
     #  Record voice from microphone and recognize it using Google Speech Recognition
     def recognize(self):
-        # print(self.list_working_microphones())
-        with sr.Microphone() as source:  
+        
+        with sr.Microphone(device_index=1) as source:  
+            # print(source.list_working_microphones())
+            print(source.list_microphone_names())
+            print(source.device_index)
             self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
             recognized_text = None
             try:
