@@ -54,6 +54,9 @@ class SpeechThread(Thread):
         # angle of rotation 45 degrees
         angle = math.pi/4
         
+        with sr.Microphone(device_index=1) as source:  
+            self.r.adjust_for_ambient_noise(source, duration=1)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
+        
         # main loop
         while self.is_running:
             # check for signals from the GUI
@@ -267,9 +270,9 @@ class SpeechThread(Thread):
         
         with sr.Microphone(device_index=1) as source:  
             # print(source.list_working_microphones())
-            print(source.list_microphone_names())
-            print(source.device_index)
-            self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
+            # print(source.list_microphone_names())
+            # print(source.device_index)
+            # self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
             recognized_text = None
             try:
                 # Receive audio from microphone
