@@ -119,6 +119,12 @@ class SpeechThread(Thread):
                             y = 0.0
                             theta = -angle
                             self.motion.moveTo(x, y, theta, t)
+                        
+                        elif txt == 'turn around':
+                            x = 0.0
+                            y = 0.0
+                            theta = math.pi
+                            self.motion.moveTo(x, y, theta, t)
                             
                         elif txt == 'stop talking':
                             self.q_button.put(txt)
