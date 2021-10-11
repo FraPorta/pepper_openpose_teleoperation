@@ -13,13 +13,13 @@ class PlotAngles:
         self.path = path
         self.pos = {0: (0,0),
                     1: (0,1),
-                    2: (0,2),
-                    3: (1,0),
-                    4: (1,1),
-                    5: (1,2),
-                    6: (2,0),
-                    7: (2,1),
-                    8: (2,2)}
+                    2: (1,0),
+                    3: (1,1),
+                    4: (2,0),
+                    5: (2,1),
+                    6: (3,0),
+                    7: (3,1),
+                    8: (4,0)}
         
     ##  function plot_data
     #
@@ -59,7 +59,7 @@ class PlotAngles:
         files_list.reverse()
         
         # Create figure with 12 subplots
-        fig, axs = plt.subplots(3,3)
+        fig, axs = plt.subplots(5,2)
         fig.suptitle('Joints angles')
 
         for i, f in enumerate(files_list):
@@ -76,7 +76,7 @@ class PlotAngles:
             self.plot_data(axs, data_raw, data_filt, data_robot, name, time_samples, self.pos.get(i))
         
         print("Showing angles plots, close to terminate the program.")
-        plt.subplots_adjust(hspace=0.36)
+        plt.subplots_adjust(hspace=0.425, top=0.94, left=0.08, bottom=0.05, right=0.98)
         plt.show()
             
         
