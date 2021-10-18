@@ -1,7 +1,9 @@
 # Pepper Teleoperation using OpenPose
 ## Description
 This repository contains the python code to use the Softbank Robotics Humanoid Robot Pepper to approach a user and then be teleoperated by an operator using Openpose for human pose estimation through the RGB camera of a Kinect v2 and the Kinect Depth Camera to add the third dimension to the estimated skeleton. From the 3D keypoints the joint angles are calculated and used as control input for the robot motors. A real-time butterworth filter is used for smoothing the control signals.
-   
+<!-- A video of the framework in action can be found at [this link](https://youtu.be/XeFq2MnqKOw) -->
+[<img src="https://img.youtube.com/vi/XeFq2MnqKOw/maxresdefault.jpg" width="50%">](https://youtu.be/XeFq2MnqKOw)
+
 ## Installation guide
 * OpenPose [prerequisites](https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/doc/installation/1_prerequisites.md):
     * Windows 10 (For this implementation)
