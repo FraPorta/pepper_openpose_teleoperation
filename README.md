@@ -3,7 +3,7 @@
 This repository contains the python code to use the Softbank Robotics Humanoid Robot Pepper to approach a user and then be teleoperated by an operator using Openpose for human pose estimation through the RGB camera of a Kinect v2 and the Kinect Depth Camera to add the third dimension to the estimated skeleton. From the 3D keypoints the joint angles are calculated and used as control input for the robot motors. A real-time butterworth filter is used for smoothing the control signals.
 <!-- A video of the framework in action can be found at [this link](https://youtu.be/XeFq2MnqKOw) -->
 Here you can find a video showing the framework in action:
-<video src='https://youtu.be/XeFq2MnqKOw' width=180/>
+<!-- <video src='https://youtu.be/XeFq2MnqKOw' width=180/> -->
 [<img src="https://img.youtube.com/vi/XeFq2MnqKOw/maxresdefault.jpg" width="70%">](https://youtu.be/XeFq2MnqKOw)
 
 ## Installation guide
