@@ -62,7 +62,8 @@ class PlotAngles:
         sum_diff = 0.0
         for i in difference:
             sum_diff += i.microseconds
-            average = (sum_diff/len(difference))/1000
+            
+        average = (sum_diff/len(difference))/1000
             
         print(str(average) + ' ms')    
         return average 
@@ -88,7 +89,7 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--path", type=str, default="23_09_2021_17-04-43_Gera1",
+    parser.add_argument("--path", type=str, default="17_09_2021_12-17-50_Marco3",
                         help="Insert name of the folder where the angles are stored in a csv file in the 'angles_data' folder")
 
     args = parser.parse_args()

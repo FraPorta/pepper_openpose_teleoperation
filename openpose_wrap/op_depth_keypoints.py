@@ -291,8 +291,9 @@ try:
     # Custom Params (refer to include/openpose/flags.hpp for more parameters)
     params = dict()
     # Change path to point to the models folder 
+    params["model_folder"] = home + '/openpose/models/'  
     # params["model_folder"] = home + "/Downloads/openpose/models/"  # MSI
-    params["model_folder"] = home + '/openpose/models/'
+    
     # params["net_resolution"] = "-1x192"         # select net resolution (necessary for low end graphic cards)
     # params["face"] = "true"
     # params["face_net_resolution"] = "240x240"

@@ -35,7 +35,10 @@ class PlotAngles:
             time_samples = data[3, :]
             
             # Calculate error
-            mean_square_error = np.square(np.subtract(data_raw, data_robot)).mean()
+            # mean_square_error = np.square(np.subtract(data_raw, data_robot)).mean()
+
+            mean_square_error = np.abs(np.subtract(data_raw, data_robot)).mean()
+            
             # error = sum(abs((data_robot-data_raw)^2))/len(data_robot)
             # error = data_robot - data_raw
             # average_error = sum(error)/len(error)
@@ -43,11 +46,16 @@ class PlotAngles:
             # av_errors.append(average_error)
         
         return av_errors 
-        
-    
+    ## method multiply_and_round
+    # 
+    #  function for formatting the print output   
+    def multiply_and_round(self, n):
+        n *= 100
+        return round(n, 3)
+
     def start(self):
         
-        self.list_fold = [f for f in os.listdir(self.folder)]
+        self.list_fold = [f for f in os.listdir(self.folder) if 'Marco' in f]
         av_errors_list = []
         for fold in self.list_fold:
             self.path =  "angles_data/" +fold
@@ -60,16 +68,25 @@ class PlotAngles:
             av_errors_list.append(errors_dict)
 
         average_error_dict = {}
-        
-        for i in range(0, 9):
-            temp_list = zip(*av_errors_list)[i]
-            average_error_dict[files_list[i]] = sum(temp_list)/len(temp_list)
+        result_dict = {}
+        temp_list = zip(*av_errors_list)
+        for i in range(9):
+            # temp_list = zip(*av_errors_list)[i]
+            result_dict[files_list[i][:-4:]] = list(map(self.multiply_and_round, temp_list[i]))
+            average_error_dict[files_list[i][:-4:]] = round(sum(temp_list[i])/len(temp_list[i])*100 , 3)
             
-        print(average_error_dict)
+        print("Three tries MSE:")
+        for key in sorted(result_dict, reverse=True):
+            print("%s: %s*10-2" % (key, result_dict[key]))
+        # print(sorted(result_dict))
+        print("Average of the three tries:")
+        for key in sorted(average_error_dict, reverse=True):
+            print("%s: %s *10-2" % (key, average_error_dict[key]))
+            # print(sorted(average_error_dict))
              
         
 if __name__ == '__main__':
-    import argparse
+    # import argparse
     
     # parser = argparse.ArgumentParser()
     # parser.add_argument("--path", type=str, default="05_07_2021_16-00-53",
