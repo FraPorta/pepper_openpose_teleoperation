@@ -200,17 +200,3 @@ if __name__ == '__main__':
     trim_end = 500
     pa = PlotAngles(path, n_subplots, init, trim_start, trim_end)
     pa.run()
-    
-    
-    
-'''
-# POWER SPECTRUM
-fourier_transform = np.fft.rfft(data)
-abs_fourier_transform = np.abs(fourier_transform)
-power_spectrum = np.square(abs_fourier_transform)
-frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
-if len(frequency) == len(power_spectrum):
-    axs[0].plot(frequency, power_spectrum)
-    axs[0].set(xlabel='frequency [1/s]', ylabel='power')
-    axs[0].set_title('Power Spectrum')
-'''

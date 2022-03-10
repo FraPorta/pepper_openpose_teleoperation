@@ -8,9 +8,9 @@ import pyglet
 from PIL import ImageTk, Image
 
 from GUI_material.image_label import ImageLabel
-from speech_thread import SpeechThread
-from ok_pepper_thread import OkPepperThread
-from pepper_approach_control_thread import PepperApproachControl
+from utils.speech_thread import SpeechThread
+from utils.ok_pepper_thread import OkPepperThread
+from utils.pepper_approach_control_thread import PepperApproachControl
 from Queue import Queue
 
 # Colors
