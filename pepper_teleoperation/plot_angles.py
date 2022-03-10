@@ -173,7 +173,7 @@ class PlotAngles:
                 
         
         print("Showing angles plots, close to terminate the program.")
-        plt.subplots_adjust(hspace=0.425, top=0.94, left=0.08, bottom=0.05, right=0.98)
+        plt.subplots_adjust(wspace=0.28,hspace=0.42, top=0.89, left=0.11, bottom=0.09, right=0.96)
         plt.show()
             
         
@@ -183,17 +183,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, default="21_09_2021_12-02-03_Milla3",
                         help="Insert name of the folder where the angles are stored in a csv file in the 'angles_data' folder")
-    parser.add_argument("--n_plots", type=int, default="9",
+    parser.add_argument("--n_plots", type=int, default="4",
                         help="Insert number of angles you want to display")
-    parser.add_argument("--init", type=int, default="0",
+    parser.add_argument("--init", type=int, default="4",
                         help="Insert number of the first angle you want to display")
 
 
     args = parser.parse_args()
     # path = "angles_data/" + args.path
-    path = "angles_data/" + "17_09_2021_12-02-21_Marco1"
+    # path = "angles_data/" + "17_09_2021_12-02-21_Marco1"
     # path = "angles_data/" + "17_09_2021_12-08-18_Marco2"
-    # path = "angles_data/" + "17_09_2021_12-17-50_Marco3"
+    path = "angles_data/" + "17_09_2021_12-17-50_Marco3"
     n_subplots = args.n_plots
     init = args.init
     trim_start = 50
