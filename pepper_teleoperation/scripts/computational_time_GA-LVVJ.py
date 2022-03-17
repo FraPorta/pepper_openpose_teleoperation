@@ -1,14 +1,10 @@
 import argparse
-import numpy as np
 import os
-import matplotlib.pyplot as plt
 import ast
 import csv
 from os.path import isfile, join
 
 from datetime import datetime
-
-from numpy.lib.function_base import average
 
 
 ## class PlotAngles

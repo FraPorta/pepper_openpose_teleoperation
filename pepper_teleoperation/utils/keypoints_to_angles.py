@@ -400,7 +400,7 @@ class KeypointsToAngles:
 
             # Invert right arm with left arm
             wp_dict = self.invert_right_left(wp_dict) 
-
+            
             # HipPitch angles 
             if all (body_part in wp_dict for body_part in HP):
                 HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]))
